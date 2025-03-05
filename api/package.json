@@ -1,0 +1,21 @@
+{
+  "name": "afip-api",
+  "version": "1.0.0",
+  "description": "API para conectar con servicios de AFIP",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "moment": "^2.30.1",
+    "soap": "^0.45.0",
+    "xml2js": "^0.4.23"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}

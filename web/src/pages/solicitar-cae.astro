@@ -1,0 +1,478 @@
+---
+// Lógica del servidor
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Solicitar CAE - AFIP</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5f5;
+      }
+      header {
+        background-color: #00395d;
+        color: white;
+        padding: 4rem;
+        text-align: center;
+      }
+      nav {
+        background-color: #00395d;
+        border-color: #c1ced6;
+        border-width: 1px;
+        padding: 0.5rem;
+        text-align: center;
+      }
+      nav a {
+        color: rgba(172, 166, 201, 0.952);
+        text-decoration: none;
+        margin: 0 1rem;
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px;
+      }
+      nav a:hover {
+        background-color: rgba(54, 147, 190, 0.66);
+      }
+      main {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 1rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .form-section {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      h3 {
+        margin-top: 0;
+        color: #0056b3;
+      }
+      .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+        gap: 1rem;
+      }
+      .form-group {
+        flex: 1 1 200px;
+        margin-bottom: 1rem;
+      }
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+      }
+      input, select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .result {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+      }
+      .error {
+        color: #d32f2f;
+        margin-top: 0.5rem;
+      }
+      .hidden {
+        display: none;
+      }
+      .success {
+        color: #388e3c;
+        font-weight: bold;
+      }
+      .iva-container {
+        margin-top: 1rem;
+      }
+      .iva-item {
+        background-color: #f0f8ff;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border-radius: 4px;
+        position: relative;
+      }
+      .remove-iva {
+        position: absolute;
+        right: 0.5rem;
+        top: 0.5rem;
+        background-color: #e53935;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        line-height: 24px;
+        text-align: center;
+        font-size: 14px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Sistema de Facturación Electrónica AFIP</h1>
+    </header>
+    
+    <nav>
+      <a href="/">Consulta de Comprobantes</a>
+      <a href="/solicitar-cae">Solicitar CAE</a>
+    </nav>
+    
+    <main>
+      <h2>Solicitud de CAE</h2>
+      <p>Complete los siguientes datos para solicitar un CAE:</p>
+      
+      <form id="caeForm">
+        <div class="form-section">
+          <h3>Datos del Comprobante</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="puntoVenta">Punto de Venta:</label>
+              <input type="number" id="puntoVenta" required min="1">
+            </div>
+            
+            <div class="form-group">
+              <label for="tipoComprobante">Tipo de Comprobante:</label>
+              <select id="tipoComprobante" required>
+                <option value="">Seleccionar...</option>
+                <option value="1">Factura A</option>
+                <option value="6">Factura B</option>
+                <option value="11">Factura C</option>
+                <option value="3">Nota de Crédito A</option>
+                <option value="8">Nota de Crédito B</option>
+                <option value="13">Nota de Crédito C</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="concepto">Concepto:</label>
+              <select id="concepto" required>
+                <option value="">Seleccionar...</option>
+                <option value="1">Productos</option>
+                <option value="2">Servicios</option>
+                <option value="3">Productos y Servicios</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="numero">Número de Comprobante:</label>
+              <input type="number" id="numero" required min="1">
+            </div>
+            
+            <div class="form-group">
+              <label for="fecha">Fecha:</label>
+              <input type="date" id="fecha" required>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-section">
+          <h3>Datos del Cliente</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="docTipo">Tipo de Documento:</label>
+              <select id="docTipo" required>
+                <option value="">Seleccionar...</option>
+                <option value="80">CUIT</option>
+                <option value="96">DNI</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="docNro">Número de Documento:</label>
+              <input type="number" id="docNro" required>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-section">
+          <h3>Importes</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="importeNeto">Importe Neto:</label>
+              <input type="number" id="importeNeto" step="0.01" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="importeNoGravado">Importe No Gravado:</label>
+              <input type="number" id="importeNoGravado" step="0.01" value="0">
+            </div>
+            
+            <div class="form-group">
+              <label for="importeExento">Importe Exento:</label>
+              <input type="number" id="importeExento" step="0.01" value="0">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="importeIVA">Importe IVA:</label>
+              <input type="number" id="importeIVA" step="0.01" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="importeTotal">Importe Total:</label>
+              <input type="number" id="importeTotal" step="0.01" required>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-section">
+          <h3>Alícuotas de IVA</h3>
+          <div id="ivaContainer" class="iva-container">
+            <!-- Los items de IVA se agregarán dinámicamente -->
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ivaId">Tipo de IVA:</label>
+              <select id="ivaId">
+                <option value="">Seleccionar...</option>
+                <option value="5">21%</option>
+                <option value="4">10.5%</option>
+                <option value="6">27%</option>
+                <option value="3">0%</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="ivaBaseImponible">Base Imponible:</label>
+              <input type="number" id="ivaBaseImponible" step="0.01">
+            </div>
+            
+            <div class="form-group">
+              <label for="ivaImporte">Importe IVA:</label>
+              <input type="number" id="ivaImporte" step="0.01">
+            </div>
+          </div>
+          
+          <button type="button" id="agregarIva">Agregar Alícuota IVA</button>
+        </div>
+        
+        <div class="form-section">
+          <h3>Datos Adicionales (Servicios)</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fechaServicioDesde">Fecha Servicio Desde:</label>
+              <input type="date" id="fechaServicioDesde">
+            </div>
+            
+            <div class="form-group">
+              <label for="fechaServicioHasta">Fecha Servicio Hasta:</label>
+              <input type="date" id="fechaServicioHasta">
+            </div>
+            
+            <div class="form-group">
+              <label for="fechaVencimientoPago">Fecha Vencimiento Pago:</label>
+              <input type="date" id="fechaVencimientoPago">
+            </div>
+          </div>
+        </div>
+        
+        <button type="submit" id="submitBtn">Solicitar CAE</button>
+      </form>
+      
+      <div id="resultado" class="result hidden">
+        <h3>Resultado de la solicitud</h3>
+        <div id="resultadoContenido"></div>
+      </div>
+      
+      <div id="error" class="error hidden"></div>
+    </main>
+
+    <script>
+      // URL de la API
+      const API_URL = 'http://localhost:3301/api/afip';
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        const caeForm = document.getElementById('caeForm');
+        const resultadoDiv = document.getElementById('resultado');
+        const resultadoContenido = document.getElementById('resultadoContenido');
+        const errorDiv = document.getElementById('error');
+        const agregarIvaBtn = document.getElementById('agregarIva');
+        const ivaContainer = document.getElementById('ivaContainer');
+        
+        // Array para almacenar las alícuotas de IVA
+        const ivaItems = [];
+        
+        // Agregar alícuota de IVA
+        agregarIvaBtn.addEventListener('click', () => {
+          const ivaId = document.getElementById('ivaId').value;
+          const ivaBaseImponible = document.getElementById('ivaBaseImponible').value;
+          const ivaImporte = document.getElementById('ivaImporte').value;
+          
+          if (!ivaId || !ivaBaseImponible || !ivaImporte) {
+            alert('Complete todos los campos de la alícuota de IVA');
+            return;
+          }
+          
+          // Crear objeto de alícuota
+          const alicuota = {
+            Id: parseInt(ivaId),
+            BaseImp: parseFloat(ivaBaseImponible),
+            Importe: parseFloat(ivaImporte)
+          };
+          
+          // Agregar al array
+          ivaItems.push(alicuota);
+          
+          // Actualizar UI
+          renderIvaItems();
+          
+          // Limpiar campos
+          document.getElementById('ivaId').value = '';
+          document.getElementById('ivaBaseImponible').value = '';
+          document.getElementById('ivaImporte').value = '';
+        });
+        
+        // Función para renderizar los items de IVA
+        function renderIvaItems() {
+          ivaContainer.innerHTML = '';
+          
+          ivaItems.forEach((item, index) => {
+            const ivaTypeName = getIvaTypeName(item.Id);
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'iva-item';
+            itemDiv.innerHTML = `
+              <button type="button" class="remove-iva" data-index="${index}">✕</button>
+              <p><strong>Tipo:</strong> ${ivaTypeName}</p>
+              <p><strong>Base Imponible:</strong> $${item.BaseImp.toFixed(2)}</p>
+              <p><strong>Importe:</strong> $${item.Importe.toFixed(2)}</p>
+            `;
+            ivaContainer.appendChild(itemDiv);
+          });
+          
+          // Agregar listeners para los botones de eliminar
+          document.querySelectorAll('.remove-iva').forEach(btn => {
+            btn.addEventListener('click', function() {
+              const index = parseInt(this.getAttribute('data-index'));
+              ivaItems.splice(index, 1);
+              renderIvaItems();
+            });
+          });
+        }
+        
+        // Obtener nombre del tipo de IVA
+        function getIvaTypeName(id) {
+          const ivaTypes = {
+            3: 'IVA 0%',
+            4: 'IVA 10.5%',
+            5: 'IVA 21%',
+            6: 'IVA 27%'
+          };
+          return ivaTypes[id] || 'Desconocido';
+        }
+        
+        // Enviar formulario
+        caeForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          // Ocultar mensajes anteriores
+          resultadoDiv.classList.add('hidden');
+          errorDiv.classList.add('hidden');
+          
+          try {
+            // Recopilar datos del formulario
+            const datosComprobante = {
+              puntoVenta: parseInt(document.getElementById('puntoVenta').value),
+              tipoComprobante: parseInt(document.getElementById('tipoComprobante').value),
+              concepto: parseInt(document.getElementById('concepto').value),
+              numero: parseInt(document.getElementById('numero').value),
+              fecha: document.getElementById('fecha').value,
+              docTipo: parseInt(document.getElementById('docTipo').value),
+              docNro: parseInt(document.getElementById('docNro').value),
+              importeNeto: parseFloat(document.getElementById('importeNeto').value),
+              importeNoGravado: parseFloat(document.getElementById('importeNoGravado').value || 0),
+              importeExento: parseFloat(document.getElementById('importeExento').value || 0),
+              importeIVA: parseFloat(document.getElementById('importeIVA').value),
+              importeTotal: parseFloat(document.getElementById('importeTotal').value),
+              fechaServicioDesde: document.getElementById('fechaServicioDesde').value || null,
+              fechaServicioHasta: document.getElementById('fechaServicioHasta').value || null,
+              fechaVencimientoPago: document.getElementById('fechaVencimientoPago').value || null,
+              iva: ivaItems
+            };
+            
+            console.log('Enviando datos:', datosComprobante);
+            
+            // Llamada a la API
+            const response = await fetch(`${API_URL}/obtener-cae`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(datosComprobante)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+              console.log("Respuesta exitosa:", data);
+              resultadoContenido.innerHTML = `
+                <p class="success">¡CAE obtenido exitosamente!</p>
+                <p><strong>CAE:</strong> ${data.cae}</p>
+                <p><strong>Vencimiento CAE:</strong> ${data.fechaVencimientoCAE}</p>
+                <p><strong>Resultado:</strong> ${data.resultado}</p>
+                <h4>Respuesta completa:</h4>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+              `;
+              resultadoDiv.classList.remove('hidden');
+            } else {
+              console.error("Error en respuesta:", data);
+              errorDiv.textContent = data.error || 'Ocurrió un error al procesar la solicitud.';
+              errorDiv.classList.remove('hidden');
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            errorDiv.textContent = 'Error al conectar con el servidor.';
+            errorDiv.classList.remove('hidden');
+          }
+        });
+        
+        // Calcular automáticamente el IVA y total cuando cambia el importe neto
+        document.getElementById('importeNeto').addEventListener('input', calcularImportes);
+        
+        function calcularImportes() {
+          const importeNeto = parseFloat(document.getElementById('importeNeto').value) || 0;
+          const importeNoGravado = parseFloat(document.getElementById('importeNoGravado').value) || 0;
+          const importeExento = parseFloat(document.getElementById('importeExento').value) || 0;
+          
+          // Calcular IVA (asumiendo 21% por defecto)
+          const importeIVA = Math.round(importeNeto * 0.21 * 100) / 100;
+          document.getElementById('importeIVA').value = importeIVA.toFixed(2);
+          
+          // Calcular total
+          const importeTotal = importeNeto + importeIVA + importeNoGravado + importeExento;
+          document.getElementById('importeTotal').value = importeTotal.toFixed(2);
+        }
+      });
+    </script>
+  </body>
+</html> 

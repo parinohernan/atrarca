@@ -1,0 +1,19 @@
+{
+  "name": "mi-app-afip",
+  "version": "1.0.0",
+  "description": "Aplicación para consultar comprobantes AFIP",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri"
+  },
+  "author": "Tu Nombre",
+  "license": "MIT",
+  "dependencies": {
+    "soap": "^0.45.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.4.0",
+    "@tauri-apps/api": "^1.4.0"
+  }
+}

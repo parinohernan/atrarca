@@ -1,0 +1,185 @@
+---
+// Componentes y lógica del servidor
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Consulta AFIP</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5f5;
+      }
+      header {
+        background-color: #00395d;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+      }
+      main {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 1rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      nav {
+        background-color: #00395d;
+        border-color: #c1ced6;
+        border-width: 1px;
+        padding: 0.5rem;
+        text-align: center;
+      }
+      nav a {
+        color: rgba(172, 166, 201, 0.952);
+        text-decoration: none;
+        margin: 0 1rem;
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px;
+      }
+      nav a:hover {
+        background-color: rgba(54, 147, 190, 0.66);
+      }
+      .form-group {
+        margin-bottom: 1rem;
+      }
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+      }
+      input, select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #resultado {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+      }
+      .error {
+        color: #d32f2f;
+        margin-top: 0.5rem;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Sistema de Consultas AFIP</h1>
+      <nav>
+        <a href="/">Consulta de Comprobantes</a>
+        <a href="/solicitar-cae">Solicitar CAE</a>
+      </nav>
+    </header>
+    <main>
+      <h2>Consulta de Último Comprobante</h2>
+      
+      <form id="consultaForm">
+        <div class="form-group">
+          <label for="puntoVenta">Punto de Venta:</label>
+          <input type="number" id="puntoVenta" required min="1">
+        </div>
+        
+        <div class="form-group">
+          <label for="tipoComprobante">Tipo de Comprobante:</label>
+          <select id="tipoComprobante" required>
+            <option value="">Seleccionar...</option>
+            <option value="1">Factura A</option>
+            <option value="6">Factura B</option>
+            <option value="11">Factura C</option>
+            <option value="3">Nota de Crédito A</option>
+            <option value="8">Nota de Crédito B</option>
+            <option value="13">Nota de Crédito C</option>
+          </select>
+        </div>
+        
+        <button type="submit">Consultar</button>
+      </form>
+      
+      <div id="resultado" class="hidden">
+        <h3>Resultado de la consulta</h3>
+        <div id="resultadoContenido"></div>
+      </div>
+      
+      <div id="error" class="error hidden"></div>
+    </main>
+
+    <script>
+      // URL de la API (ajustada al nuevo puerto)
+      const API_URL = 'http://localhost:3301/api/afip';
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        const consultaForm = document.getElementById('consultaForm');
+        const resultadoDiv = document.getElementById('resultado');
+        const resultadoContenido = document.getElementById('resultadoContenido');
+        const errorDiv = document.getElementById('error');
+        
+        consultaForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          // Ocultar mensajes anteriores
+          resultadoDiv.classList.add('hidden');
+          errorDiv.classList.add('hidden');
+          
+          const puntoVenta = document.getElementById('puntoVenta').value;
+          const tipoComprobante = document.getElementById('tipoComprobante').value;
+          
+          if (!puntoVenta || !tipoComprobante) {
+            errorDiv.textContent = 'Por favor, completa todos los campos.';
+            errorDiv.classList.remove('hidden');
+            return;
+          }
+          
+          try {
+            // Llamada a la API
+            const response = await fetch(`${API_URL}/ultimo-comprobante?puntoVenta=${puntoVenta}&tipoComprobante=${tipoComprobante}`);
+            const data = await response.json();
+            
+            if (data.success) {
+              console.log("data", data);
+              resultadoContenido.innerHTML = `
+                <p><strong>Último comprobante:</strong> ${data.ultimoComprobante}</p>
+                <p><strong>Punto de venta:</strong> ${data.puntoVenta}</p>
+                <p><strong>Tipo de comprobante:</strong> ${data.tipoComprobante}</p>
+                <p><strong>Fecha:</strong> ${data.fecha || 'No disponible'}</p>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+              `;
+              resultadoDiv.classList.remove('hidden');
+            } else {
+              errorDiv.textContent = data.error || 'Ocurrió un error al procesar la solicitud.';
+              errorDiv.classList.remove('hidden');
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            errorDiv.textContent = 'Error al conectar con el servidor.';
+            errorDiv.classList.remove('hidden');
+          }
+        });
+      });
+    </script>
+  </body>
+</html> 
