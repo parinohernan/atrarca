@@ -21,6 +21,9 @@ class WSAAService {
     this.keyPath = process.env.AFIP_KEY_PATH;
     this.tokenPath = path.resolve(__dirname, "../temp/");
     this.tokens = {};
+    console.log("certPath", this.certPath);
+    console.log("keyPath", this.keyPath);
+    console.log("tokenPath", this.tokenPath);
   }
 
   async authenticate(service) {
