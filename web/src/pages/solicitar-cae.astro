@@ -342,21 +342,35 @@
       const API_URL = 'http://localhost:3301/api/afip';
       
       document.addEventListener('DOMContentLoaded', () => {
-        const caeForm = document.getElementById('caeForm');
-        const resultadoDiv = document.getElementById('resultado');
-        const resultadoContenido = document.getElementById('resultadoContenido');
-        const errorDiv = document.getElementById('error');
-        const agregarIvaBtn = document.getElementById('agregarIvaBtn');
-        const ivaContainer = document.getElementById('ivaContainer');
+        // Obtener elementos con aserciones de tipo
+        const caeForm = document.getElementById('caeForm') as HTMLFormElement;
+        const resultadoDiv = document.getElementById('resultado') as HTMLDivElement;
+        const resultadoContenido = document.getElementById('resultadoContenido') as HTMLDivElement;
+        const errorDiv = document.getElementById('error') as HTMLDivElement;
+        const agregarIvaBtn = document.getElementById('agregarIvaBtn') as HTMLButtonElement;
+        const ivaContainer = document.getElementById('ivaContainer') as HTMLDivElement;
+        const agregarIvaAutomatico = document.getElementById('agregarIvaAutomatico') as HTMLButtonElement;
+        
+        if (!caeForm || !resultadoDiv || !resultadoContenido || !errorDiv || !agregarIvaBtn || !ivaContainer) {
+          console.error('No se pudieron encontrar elementos DOM necesarios');
+          return;
+        }
+        
+        // Definir la interfaz para las alícuotas de IVA
+        interface IvaAlicuota {
+          Id: number;
+          BaseImp: number;
+          Importe: number;
+        }
         
         // Array para almacenar las alícuotas de IVA
-        const ivaItems = [];
+        const ivaItems: IvaAlicuota[] = [];
         
         // Agregar alícuota de IVA
         agregarIvaBtn.addEventListener('click', () => {
-          const ivaId = document.getElementById('ivaId').value;
-          const ivaBaseImponible = document.getElementById('ivaBaseImponible').value;
-          const ivaImporte = document.getElementById('ivaImporte').value;
+          const ivaId = (document.getElementById('ivaId') as HTMLSelectElement).value;
+          const ivaBaseImponible = (document.getElementById('ivaBaseImponible') as HTMLInputElement).value;
+          const ivaImporte = (document.getElementById('ivaImporte') as HTMLInputElement).value;
           
           if (!ivaId || !ivaBaseImponible || !ivaImporte) {
             alert('Complete todos los campos de la alícuota de IVA');
@@ -364,7 +378,7 @@
           }
           
           // Crear objeto de alícuota
-          const alicuota = {
+          const alicuota: IvaAlicuota = {
             Id: parseInt(ivaId),
             BaseImp: parseFloat(ivaBaseImponible),
             Importe: parseFloat(ivaImporte)
@@ -377,9 +391,9 @@
           renderIvaItems();
           
           // Limpiar campos
-          document.getElementById('ivaId').value = '';
-          document.getElementById('ivaBaseImponible').value = '';
-          document.getElementById('ivaImporte').value = '';
+          (document.getElementById('ivaId') as HTMLSelectElement).value = '';
+          (document.getElementById('ivaBaseImponible') as HTMLInputElement).value = '';
+          (document.getElementById('ivaImporte') as HTMLInputElement).value = '';
         });
         
         // Función para renderizar los items de IVA
@@ -402,7 +416,7 @@
           // Agregar listeners para los botones de eliminar
           document.querySelectorAll('.remove-iva').forEach(btn => {
             btn.addEventListener('click', function() {
-              const index = parseInt(this.getAttribute('data-index'));
+              const index = parseInt(this.getAttribute('data-index') || '0');
               ivaItems.splice(index, 1);
               renderIvaItems();
             });
@@ -410,14 +424,47 @@
         }
         
         // Obtener nombre del tipo de IVA
-        function getIvaTypeName(id) {
-          const ivaTypes = {
+        function getIvaTypeName(id: number): string {
+          const ivaTypes: Record<number, string> = {
             3: 'IVA 0%',
             4: 'IVA 10.5%',
             5: 'IVA 21%',
             6: 'IVA 27%'
           };
           return ivaTypes[id] || 'Desconocido';
+        }
+        
+        // Agregar IVA 21% automáticamente
+        if (agregarIvaAutomatico) {
+          agregarIvaAutomatico.addEventListener('click', () => {
+            const importeNeto = parseFloat((document.getElementById('importeNeto') as HTMLInputElement).value);
+            
+            if (!importeNeto || isNaN(importeNeto)) {
+              alert('Debe ingresar un importe neto válido para calcular el IVA automáticamente');
+              return;
+            }
+            
+            // Calcular IVA 21%
+            const baseImponible = importeNeto;
+            const iva = Math.round(baseImponible * 0.21 * 100) / 100; // Redondeo a 2 decimales
+            
+            // Crear objeto de alícuota
+            const alicuota: IvaAlicuota = {
+              Id: 5, // Código para IVA 21%
+              BaseImp: baseImponible,
+              Importe: iva
+            };
+            
+            // Agregar al array
+            ivaItems.push(alicuota);
+            
+            // Actualizar UI
+            renderIvaItems();
+            
+            // Actualizar importes totales
+            (document.getElementById('importeIVA') as HTMLInputElement).value = iva.toFixed(2);
+            (document.getElementById('importeTotal') as HTMLInputElement).value = (importeNeto + iva).toFixed(2);
+          });
         }
         
         // Enviar formulario
@@ -430,7 +477,7 @@
           
           try {
             // Recopilar datos del formulario
-            const importeNeto = parseFloat(document.getElementById('importeNeto').value);
+            const importeNeto = parseFloat((document.getElementById('importeNeto') as HTMLInputElement).value);
             
             // Verificar si hay alícuotas de IVA cuando el importe neto es mayor a cero
             if (importeNeto > 0 && ivaItems.length === 0) {
@@ -441,21 +488,21 @@
             }
             
             const datosComprobante = {
-              puntoVenta: parseInt(document.getElementById('puntoVenta').value),
-              tipoComprobante: parseInt(document.getElementById('tipoComprobante').value),
-              concepto: parseInt(document.getElementById('concepto').value),
-              numero: parseInt(document.getElementById('numero').value),
-              fecha: document.getElementById('fecha').value,
-              docTipo: parseInt(document.getElementById('docTipo').value),
-              docNro: parseInt(document.getElementById('docNro').value),
-              importeNeto: parseFloat(document.getElementById('importeNeto').value),
-              importeNoGravado: parseFloat(document.getElementById('importeNoGravado').value || 0),
-              importeExento: parseFloat(document.getElementById('importeExento').value || 0),
-              importeIVA: parseFloat(document.getElementById('importeIVA').value),
-              importeTotal: parseFloat(document.getElementById('importeTotal').value),
-              fechaServicioDesde: document.getElementById('fechaServicioDesde').value || null,
-              fechaServicioHasta: document.getElementById('fechaServicioHasta').value || null,
-              fechaVencimientoPago: document.getElementById('fechaVencimientoPago').value || null,
+              puntoVenta: parseInt((document.getElementById('puntoVenta') as HTMLSelectElement).value),
+              tipoComprobante: parseInt((document.getElementById('tipoComprobante') as HTMLSelectElement).value),
+              concepto: parseInt((document.getElementById('concepto') as HTMLSelectElement).value),
+              numero: parseInt((document.getElementById('numero') as HTMLInputElement).value),
+              fecha: (document.getElementById('fecha') as HTMLInputElement).value,
+              docTipo: parseInt((document.getElementById('docTipo') as HTMLSelectElement).value),
+              docNro: parseInt((document.getElementById('docNro') as HTMLInputElement).value),
+              importeNeto: parseFloat((document.getElementById('importeNeto') as HTMLInputElement).value),
+              importeNoGravado: parseFloat((document.getElementById('importeNoGravado') as HTMLInputElement).value || '0'),
+              importeExento: parseFloat((document.getElementById('importeExento') as HTMLInputElement).value || '0'),
+              importeIVA: parseFloat((document.getElementById('importeIVA') as HTMLInputElement).value),
+              importeTotal: parseFloat((document.getElementById('importeTotal') as HTMLInputElement).value),
+              fechaServicioDesde: (document.getElementById('fechaServicioDesde') as HTMLInputElement).value || null,
+              fechaServicioHasta: (document.getElementById('fechaServicioHasta') as HTMLInputElement).value || null,
+              fechaVencimientoPago: (document.getElementById('fechaVencimientoPago') as HTMLInputElement).value || null,
               iva: ivaItems
             };
             
@@ -476,11 +523,12 @@
               console.log("Respuesta exitosa:", data);
               resultadoContenido.innerHTML = `
                 <p class="success">¡CAE obtenido exitosamente!</p>
-                <p><strong>CAE:</strong> ${data.cae}</p>
-                <p><strong>Vencimiento CAE:</strong> ${data.fechaVencimientoCAE}</p>
-                <p><strong>Resultado:</strong> ${data.resultado}</p>
-                <h4>Respuesta completa:</h4>
-                <pre>${JSON.stringify(data, null, 2)}</pre>
+                <div class="result-item">
+                  <strong>CAE:</strong> ${data.cae}
+                </div>
+                <div class="result-item">
+                  <strong>Vencimiento CAE:</strong> ${data.fechaVencimientoCAE}
+                </div>
               `;
               resultadoDiv.classList.remove('hidden');
             } else {
@@ -495,58 +543,64 @@
           }
         });
         
-        // Calcular automáticamente el IVA y total cuando cambia el importe neto
-        document.getElementById('importeNeto').addEventListener('input', calcularImportes);
-        
-        function calcularImportes() {
-          const importeNeto = parseFloat(document.getElementById('importeNeto').value) || 0;
-          const importeNoGravado = parseFloat(document.getElementById('importeNoGravado').value) || 0;
-          const importeExento = parseFloat(document.getElementById('importeExento').value) || 0;
-          
-          // Calcular IVA (asumiendo 21% por defecto)
-          const importeIVA = Math.round(importeNeto * 0.21 * 100) / 100;
-          document.getElementById('importeIVA').value = importeIVA.toFixed(2);
-          
-          // Calcular total
-          const importeTotal = importeNeto + importeIVA + importeNoGravado + importeExento;
-          document.getElementById('importeTotal').value = importeTotal.toFixed(2);
-          
-          // Si no hay alícuotas de IVA añadidas y el importe neto es mayor a 0,
-          // podemos sugerir al usuario que agregue una
-          if (importeNeto > 0 && ivaItems.length === 0) {
-            const ivaMsg = document.getElementById('ivaMessage') || document.createElement('div');
-            ivaMsg.id = 'ivaMessage';
-            ivaMsg.className = 'alert alert-warning';
-            ivaMsg.textContent = 'Recuerde agregar al menos una alícuota de IVA para el importe neto.';
+        // Función para obtener el último número de comprobante
+        const obtenerUltimoComprobante = async () => {
+          try {
+            const puntoVenta = (document.getElementById('puntoVenta') as HTMLSelectElement).value;
+            const tipoComprobante = (document.getElementById('tipoComprobante') as HTMLSelectElement).value;
+            const numero = document.getElementById('numero') as HTMLInputElement;
             
-            // Insertar mensaje después de la sección de IVA
-            const ivaSection = document.querySelector('.form-section:nth-child(3)');
-            if (ivaSection && !document.getElementById('ivaMessage')) {
-              ivaSection.appendChild(ivaMsg);
+            if (!puntoVenta || !tipoComprobante) {
+              alert('Seleccione un punto de venta y tipo de comprobante');
+              return;
             }
-          } else if (importeNeto === 0) {
-            // Quitar el mensaje si importe neto es 0
-            const ivaMsg = document.getElementById('ivaMessage');
-            if (ivaMsg) ivaMsg.remove();
+            
+            const response = await fetch(`${API_URL}/comprobante?tipo=${tipoComprobante}&punto_venta=${puntoVenta}`);
+            const data = await response.json();
+            
+            if (data.success) {
+              // Sumar 1 al último número para obtener el siguiente
+              const siguienteNumero = data.ultimoComprobante + 1;
+              numero.value = siguienteNumero.toString();
+            } else {
+              alert(`Error al obtener el último comprobante: ${data.error}`);
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Error al conectar con el servidor');
           }
+        };
+        
+        // Agregar listener para botón de obtener último comprobante
+        const obtenerUltimoBtn = document.getElementById('obtenerUltimoBtn') as HTMLButtonElement;
+        if (obtenerUltimoBtn) {
+          obtenerUltimoBtn.addEventListener('click', obtenerUltimoComprobante);
         }
         
-        // Agregar esta función para añadir automáticamente IVA 21% a partir del importe neto
-        document.getElementById('agregarIvaAutomatico').addEventListener('click', () => {
-          const importeNeto = parseFloat(document.getElementById('importeNeto').value) || 0;
-          if (importeNeto <= 0) {
-            alert('Ingrese un importe neto mayor a 0 para agregar IVA automáticamente');
-            return;
-          }
-          
-          // Agregar IVA 21% 
-          document.getElementById('ivaId').value = '5'; // 5 es el código para 21%
-          document.getElementById('ivaBaseImponible').value = importeNeto.toFixed(2);
-          document.getElementById('ivaImporte').value = (importeNeto * 0.21).toFixed(2);
-          
-          // Simular clic en el botón para agregar
-          document.getElementById('agregarIvaBtn').click();
-        });
+        // Agregar listener para calcular totales automáticamente
+        const calcularTotalesBtn = document.getElementById('calcularTotalesBtn') as HTMLButtonElement;
+        if (calcularTotalesBtn) {
+          calcularTotalesBtn.addEventListener('click', () => {
+            const importeNeto = parseFloat((document.getElementById('importeNeto') as HTMLInputElement).value);
+            
+            if (!importeNeto || isNaN(importeNeto)) {
+              alert('Debe ingresar un importe neto válido');
+              return;
+            }
+            
+            // Sumar todos los importes de IVA del array ivaItems
+            const totalIVA = ivaItems.reduce((sum, item) => sum + item.Importe, 0);
+            
+            const importeNoGravado = parseFloat((document.getElementById('importeNoGravado') as HTMLInputElement).value || '0');
+            const importeExento = parseFloat((document.getElementById('importeExento') as HTMLInputElement).value || '0');
+            
+            // Calcular total
+            const total = importeNeto + totalIVA + importeNoGravado + importeExento;
+            
+            (document.getElementById('importeIVA') as HTMLInputElement).value = totalIVA.toFixed(2);
+            (document.getElementById('importeTotal') as HTMLInputElement).value = total.toFixed(2);
+          });
+        }
       });
     </script>
   </body>

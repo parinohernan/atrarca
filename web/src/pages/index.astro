@@ -71,12 +71,14 @@
       button:hover {
         background-color: #45a049;
       }
+  
+      
       #resultado {
         margin-top: 1.5rem;
         padding: 1rem;
         border: 1px solid #ddd;
         border-radius: 4px;
-        background-color: #f9f9f9;
+        background-color: #f5f5f5;
       }
       .error {
         color: #d32f2f;
@@ -129,27 +131,30 @@
     </main>
 
     <script>
-      // URL de la API (ajustada al nuevo puerto)
+      // URL de la API
       const API_URL = 'http://localhost:3301/api/afip';
       
       document.addEventListener('DOMContentLoaded', () => {
-        const consultaForm = document.getElementById('consultaForm');
-        const resultadoDiv = document.getElementById('resultado');
-        const resultadoContenido = document.getElementById('resultadoContenido');
-        const errorDiv = document.getElementById('error');
+        // Obtener elementos con aserciones de tipo correctas
+        const consultaForm = document.getElementById('consultaForm') as HTMLFormElement;
+        const resultadoDiv = document.getElementById('resultado') as HTMLDivElement;
+        const resultadoContenido = document.getElementById('resultadoContenido') as HTMLDivElement;
+        const errorDiv = document.getElementById('error') as HTMLDivElement;
+        
+        // Verificar que los elementos existan
+        if (!consultaForm || !resultadoDiv || !resultadoContenido || !errorDiv) {
+          console.error('No se pudieron encontrar elementos DOM necesarios');
+          return;
+        }
         
         consultaForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           
-          // Ocultar mensajes anteriores
-          resultadoDiv.classList.add('hidden');
-          errorDiv.classList.add('hidden');
-          
-          const puntoVenta = document.getElementById('puntoVenta').value;
-          const tipoComprobante = document.getElementById('tipoComprobante').value;
+          const puntoVenta = (document.getElementById('puntoVenta') as HTMLSelectElement).value;
+          const tipoComprobante = (document.getElementById('tipoComprobante') as HTMLSelectElement).value;
           
           if (!puntoVenta || !tipoComprobante) {
-            errorDiv.textContent = 'Por favor, completa todos los campos.';
+            errorDiv.textContent = 'Debe seleccionar punto de venta y tipo de comprobante.';
             errorDiv.classList.remove('hidden');
             return;
           }
@@ -160,14 +165,35 @@
             const data = await response.json();
             
             if (data.success) {
-              console.log("data", data);
-              resultadoContenido.innerHTML = `
-                <p><strong>Último comprobante:</strong> ${data.ultimoComprobante}</p>
-                <p><strong>Punto de venta:</strong> ${data.puntoVenta}</p>
-                <p><strong>Tipo de comprobante:</strong> ${data.tipoComprobante}</p>
-                <p><strong>Fecha:</strong> ${data.fecha || 'No disponible'}</p>
-                <pre>${JSON.stringify(data, null, 2)}</pre>
+              // Limpiar contenido anterior
+              resultadoContenido.innerHTML = '';
+              console.log(data);
+              // Crear tabla de detalles
+              const table = document.createElement('table');
+              table.className = 'result-table';
+              
+              // Crear filas con la información
+              table.innerHTML = `
+                <tr>
+                  <th>Fecha</th>
+                  <td>${data.fecha}</td>
+                </tr>
+                <tr>
+                  <th>Último comprobante</th>
+                  <td>${data.ultimoComprobante.toString().padStart(8, '0')}</td>
+                </tr>
+                <tr>
+                  <th>Punto de venta</th>
+                  <td>${puntoVenta.toString().padStart(4, '0')}</td>
+                </tr>
+                <tr>
+                  <th>Tipo de comprobante</th>
+                  <td>${getTipoComprobanteNombre(tipoComprobante)}</td>
+                </tr>
               `;
+              
+              // Agregar tabla al contenedor
+              resultadoContenido.appendChild(table);
               resultadoDiv.classList.remove('hidden');
             } else {
               errorDiv.textContent = data.error || 'Ocurrió un error al procesar la solicitud.';
@@ -179,6 +205,19 @@
             errorDiv.classList.remove('hidden');
           }
         });
+        
+        // Función para obtener nombre del tipo de comprobante
+        function getTipoComprobanteNombre(tipo: string): string {
+          const tipos: {[key: string]: string} = {
+            '1': 'Factura A',
+            '6': 'Factura B',
+            '11': 'Factura C',
+            '3': 'Nota de Crédito A',
+            '8': 'Nota de Crédito B',
+            '13': 'Nota de Crédito C'
+          };
+          return tipos[tipo] || `Tipo ${tipo}`;
+        }
       });
     </script>
   </body>
