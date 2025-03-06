@@ -5,19 +5,22 @@ exports.getUltimoComprobante = async (req, res) => {
   try {
     const { puntoVenta, tipoComprobante } = req.query;
 
-    if (!puntoVenta || !tipoComprobante) {
-      return res.status(400).json({
-        error: "Debe proporcionar punto de venta y tipo de comprobante",
+    // Usar la empresa del usuario autenticado
+    const empresa = req.user.empresa;
+    if (!empresa) {
+      return res.status(403).json({
+        error: "El usuario no tiene una empresa asociada",
       });
     }
 
+    // Pasar la empresa al servicio
     const resultado = await afipService.consultarUltimoComprobante(
       parseInt(puntoVenta),
-      parseInt(tipoComprobante)
+      parseInt(tipoComprobante),
+      empresa
     );
 
     res.json(resultado);
-    console.log("resultado", resultado);
   } catch (error) {
     console.error("Error en controlador:", error);
     res.status(500).json({
@@ -31,13 +34,22 @@ exports.obtenerCAE = async (req, res) => {
   try {
     const datosComprobante = req.body;
 
+    // Usar la empresa del usuario autenticado
+    const empresa = req.user.empresa;
+    if (!empresa) {
+      return res.status(403).json({
+        error: "El usuario no tiene una empresa asociada",
+      });
+    }
+
     if (!datosComprobante) {
       return res.status(400).json({
         error: "Debe proporcionar los datos del comprobante",
       });
     }
 
-    const resultado = await afipService.obtenerCAE(datosComprobante);
+    // Pasar la empresa al servicio
+    const resultado = await afipService.obtenerCAE(datosComprobante, empresa);
     res.json(resultado);
   } catch (error) {
     console.error("Error en controlador:", error);

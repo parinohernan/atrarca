@@ -16,17 +16,33 @@ class WSAAService {
   constructor() {
     // Configuración general
     this.mode = process.env.AFIP_MODE || "testing";
-    this.cuit = process.env.AFIP_CUIT;
-    this.certPath = process.env.AFIP_CERT_PATH;
-    this.keyPath = process.env.AFIP_KEY_PATH;
     this.tokenPath = path.resolve(__dirname, "../temp/");
     this.tokens = {};
-    console.log("certPath", this.certPath);
-    console.log("keyPath", this.keyPath);
-    console.log("tokenPath", this.tokenPath);
   }
 
-  async authenticate(service) {
+  // Método para establecer la empresa actual
+  setEmpresa(empresa) {
+    if (!empresa || !empresa.cuit || !empresa.certificado || !empresa.key) {
+      throw new Error("Datos de empresa incompletos");
+    }
+
+    this.cuit = empresa.cuit;
+    this.certPath = path.resolve(__dirname, "../certs/", empresa.certificado);
+    this.keyPath = path.resolve(__dirname, "../certs/", empresa.key);
+
+    console.log("Configuración de empresa establecida:");
+    console.log("CUIT:", this.cuit);
+    console.log("Certificado:", this.certPath);
+    console.log("Clave:", this.keyPath);
+  }
+
+  async authenticate(service, empresa) {
+    if (empresa) {
+      this.setEmpresa(empresa);
+    } else {
+      throw new Error("Se requiere información de la empresa para autenticar");
+    }
+
     try {
       console.log(`Verificando token para ${service}...`);
 

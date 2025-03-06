@@ -7,3 +7,4 @@ web/.env
 private/*
 .lastTokens
 yarn-error.log
+api/src/certs/*

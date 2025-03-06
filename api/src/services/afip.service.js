@@ -14,9 +14,20 @@ const URLS = {
 class AfipService {
   constructor() {
     this.mode = process.env.AFIP_MODE || "testing";
-    this.cuit = process.env.AFIP_CUIT;
     this.wsfeClient = null;
+    this.cuit = null; // Se establecerá por empresa
   }
+
+  // Método para establecer la empresa actual
+  setEmpresa(empresa) {
+    if (!empresa || !empresa.cuit) {
+      throw new Error("Datos de empresa incompletos");
+    }
+
+    this.cuit = empresa.cuit;
+    console.log(`Usando CUIT: ${this.cuit} para operaciones AFIP`);
+  }
+
   async getWSFEClient() {
     if (!this.wsfeClient) {
       try {
@@ -36,22 +47,26 @@ class AfipService {
     return this.wsfeClient;
   }
 
-  async getAuthData() {
+  // Modificar getAuthData para usar la empresa del usuario
+  async getAuthData(empresa) {
     try {
+      if (empresa) {
+        this.setEmpresa(empresa);
+      }
+
       // Verificar que el CUIT está configurado
       if (!this.cuit) {
-        throw new Error(
-          "No se ha configurado el CUIT. Verifique la variable de entorno AFIP_CUIT"
-        );
+        throw new Error("No se ha configurado el CUIT de la empresa");
       }
 
       console.log(`Usando CUIT: ${this.cuit} para autenticación`);
 
-      const { token, sign } = await wsaaService.authenticate("wsfe");
+      // Pasar la empresa al servicio WSAA
+      const { token, sign } = await wsaaService.authenticate("wsfe", empresa);
       return {
         Token: token,
         Sign: sign,
-        Cuit: this.cuit, // Asegurarse que se usa el mismo CUIT del certificado
+        Cuit: this.cuit,
       };
     } catch (error) {
       console.error("Error al obtener datos de autenticación:", error);
@@ -59,143 +74,52 @@ class AfipService {
     }
   }
 
-  async consultarUltimoComprobante(puntoVenta, tipoComprobante) {
+  async consultarUltimoComprobante(puntoVenta, tipoComprobante, empresa) {
     try {
       console.log(
         `Consultando último comprobante: PV=${puntoVenta}, TC=${tipoComprobante}`
       );
 
-      // Obtener cliente SOAP
+      // Pasar la empresa a getAuthData
+      const authData = await this.getAuthData(empresa);
+
+      // Obtener el cliente SOAP para WSFE
       const client = await this.getWSFEClient();
-      if (!client) {
-        throw new Error("No se pudo obtener el cliente SOAP");
-      }
 
-      // Obtener datos de autenticación
-      const auth = await this.getAuthData();
-      console.log("Datos de autenticación obtenidos:", {
-        token: auth.Token ? "presente" : "ausente",
-        sign: auth.Sign ? "presente" : "ausente",
-        cuit: auth.Cuit,
-      });
-
-      // Preparar parámetros
+      // Preparar parámetros para la solicitud
       const params = {
-        Auth: auth,
-        PtoVta: parseInt(puntoVenta, 10),
-        CbteTipo: parseInt(tipoComprobante, 10),
+        Auth: authData,
+        PtoVta: puntoVenta,
+        CbteTipo: tipoComprobante,
       };
 
-      console.log("Enviando consulta a AFIP con CUIT:", auth.Cuit);
-
-      // Ejecutar consulta
+      // Llamar al método FECompUltimoAutorizado
       const resultado = await new Promise((resolve, reject) => {
         client.FECompUltimoAutorizado(params, function (err, result) {
-          if (err) {
-            console.error("Error en llamada a FECompUltimoAutorizado:", err);
-            return reject(err);
-          }
-          if (!result) {
-            console.error("Respuesta vacía de AFIP");
-            return reject(new Error("Respuesta vacía de AFIP"));
-          }
+          if (err) return reject(err);
           resolve(result);
         });
       });
 
-      console.log("Respuesta de AFIP recibida:", JSON.stringify(resultado));
-
-      // Verificar que la respuesta tenga la estructura esperada
-      if (!resultado.FECompUltimoAutorizadoResult) {
-        throw new Error("Respuesta de AFIP con formato inesperado");
-      }
-
-      // Procesar respuesta - Manejar el error específico 601
+      // Verificar si hay errores en la respuesta
       if (resultado.FECompUltimoAutorizadoResult.Errors) {
-        if (Array.isArray(resultado.FECompUltimoAutorizadoResult.Errors.Err)) {
-          // Si hay múltiples errores
-          const errors = resultado.FECompUltimoAutorizadoResult.Errors.Err;
-          const errorMsgs = errors
-            .map((e) => `Error ${e.Code}: ${e.Msg}`)
-            .join("; ");
-
-          // Verificar si alguno de los errores es el específico para "no existe comprobante"
-          if (errors.some((e) => e.Code === 1502)) {
-            console.log(
-              "No existen comprobantes para ese punto de venta y tipo. Se utilizará número 1."
-            );
-            return {
-              success: true,
-              ultimoComprobante: 0,
-              puntoVenta,
-              tipoComprobante,
-              fecha: new Date().toLocaleDateString(),
-            };
-          }
-
-          throw new Error(errorMsgs);
-        } else if (resultado.FECompUltimoAutorizadoResult.Errors.Err) {
-          // Si hay un solo error
-          const error = resultado.FECompUltimoAutorizadoResult.Errors.Err;
-
-          // Error específico de CUIT
-          if (error.Code === 601) {
-            throw new Error(
-              `El CUIT ${this.cuit} no está autorizado. Verifique que el certificado fue generado para este CUIT.`
-            );
-          }
-
-          // Error específico para "no existe comprobante"
-          if (error.Code === 1502) {
-            console.log(
-              "No existen comprobantes para ese punto de venta y tipo. Se utilizará número 1."
-            );
-            return {
-              success: true,
-              ultimoComprobante: 0,
-              puntoVenta,
-              tipoComprobante,
-              fecha: new Date().toLocaleDateString(),
-            };
-          }
-
-          throw new Error(`Error ${error.Code}: ${error.Msg}`);
-        } else {
-          throw new Error("Hubo un error en la consulta a AFIP sin detalles");
-        }
+        const errors = this.formatearErrores(
+          resultado.FECompUltimoAutorizadoResult.Errors
+        );
+        throw new Error(`Error de AFIP: ${errors}`);
       }
 
+      // Formatear respuesta
       return {
         success: true,
+        fecha: new Date().toISOString().slice(0, 10),
         ultimoComprobante: resultado.FECompUltimoAutorizadoResult.CbteNro,
-        puntoVenta,
-        tipoComprobante,
-        fecha: new Date().toLocaleDateString(),
       };
     } catch (error) {
       console.error("Error al consultar último comprobante:", error);
-
-      // Comprobar si el error es por "no existe comprobante"
-      if (
-        error.message.includes("no existe") ||
-        error.message.includes("inexistente") ||
-        error.message.includes("1502")
-      ) {
-        console.log(
-          "No existen comprobantes para ese punto de venta y tipo. Se utilizará número 1."
-        );
-        return {
-          success: true,
-          ultimoComprobante: 0,
-          puntoVenta,
-          tipoComprobante,
-          fecha: new Date().toLocaleDateString(),
-        };
-      }
-
-      // Manejo seguro del mensaje de error
-      const errorMsg = error.message || "Error desconocido";
-      throw new Error(`Error al consultar AFIP: ${errorMsg}`);
+      throw new Error(
+        `Error al consultar último comprobante: ${error.message}`
+      );
     }
   }
 
@@ -280,12 +204,12 @@ class AfipService {
     }
   }
 
-  async obtenerCAE(datosComprobante) {
+  async obtenerCAE(datosComprobante, empresa) {
     try {
-      console.log(
-        "Iniciando solicitud de CAE con datos:",
-        JSON.stringify(datosComprobante)
-      );
+      console.log("Solicitando CAE para:", datosComprobante);
+
+      // Pasar la empresa a getAuthData
+      const authData = await this.getAuthData(empresa);
 
       // Obtener cliente SOAP
       const client = await this.getWSFEClient();
@@ -294,11 +218,10 @@ class AfipService {
       }
 
       // Obtener datos de autenticación
-      const auth = await this.getAuthData();
       console.log("Datos de autenticación obtenidos:", {
-        token: auth.Token ? "presente" : "ausente",
-        sign: auth.Sign ? "presente" : "ausente",
-        cuit: auth.Cuit,
+        token: authData.Token ? "presente" : "ausente",
+        sign: authData.Sign ? "presente" : "ausente",
+        cuit: authData.Cuit,
       });
 
       // Verificar formato de fecha
@@ -313,7 +236,7 @@ class AfipService {
       try {
         // Preparar parámetros
         const paramsConsulta = {
-          Auth: auth,
+          Auth: authData,
           PtoVta: parseInt(datosComprobante.puntoVenta, 10),
           CbteTipo: parseInt(datosComprobante.tipoComprobante, 10),
         };
@@ -446,7 +369,7 @@ class AfipService {
 
       // Construcción del objeto de solicitud
       const solicitud = {
-        Auth: auth,
+        Auth: authData,
         FeCAEReq: {
           FeCabReq: {
             CantReg: 1,

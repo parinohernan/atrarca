@@ -1,0 +1,100 @@
+---
+import ProtectedLayout from '../layouts/ProtectedLayout.astro';
+---
+
+<ProtectedLayout title="Dashboard">
+  <h2>Panel de Control</h2>
+  
+  <div class="dashboard-cards">
+    <div class="card">
+      <h3>Comprobantes</h3>
+      <p>Consulta y emisión de comprobantes electrónicos</p>
+      <a href="/solicitar-cae" class="btn">Solicitar CAE</a>
+    </div>
+    
+    <div class="card">
+      <h3>Cotizaciones</h3>
+      <p>Consulta de cotizaciones oficiales</p>
+      <a href="/index" class="btn">Consultar Comprobantes</a>
+    </div>
+  </div>
+  
+  <div id="empresaInfo" class="empresa-info">
+    <h3>Información de la Empresa</h3>
+    <div id="empresaDetails"></div>
+  </div>
+</ProtectedLayout>
+
+<style>
+  .dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+  }
+  
+  .card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card h3 {
+    color: #0056b3;
+    margin-top: 0;
+  }
+  
+  .btn {
+    display: inline-block;
+    background-color: #0056b3;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-top: 1rem;
+    transition: background-color 0.3s;
+  }
+  
+  .btn:hover {
+    background-color: #003d7a;
+  }
+  
+  .empresa-info {
+    margin-top: 3rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+  }
+  
+  .empresa-info h3 {
+    color: #0056b3;
+    margin-top: 0;
+  }
+</style>
+
+<script type="module">
+  import { getCurrentUser } from '../scripts/auth.js';
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    const user = getCurrentUser();
+    const empresaDetails = document.getElementById('empresaDetails');
+    const empresaInfo = document.getElementById('empresaInfo');
+    
+    if (user && user.empresa) {
+      empresaDetails.innerHTML = `
+        <p><strong>Razón Social:</strong> ${user.empresa.razonSocial}</p>
+        <p><strong>CUIT:</strong> ${user.empresa.cuit}</p>
+      `;
+    } else {
+      empresaInfo.style.display = 'none';
+    }
+  });
+</script> 

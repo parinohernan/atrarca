@@ -17,7 +17,7 @@
       header {
         background-color: #00395d;
         color: white;
-        padding: 4rem;
+        padding: 1rem;
         text-align: center;
       }
       nav {
@@ -46,23 +46,17 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
       .form-section {
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        margin-bottom: 2rem;
         padding: 1rem;
-        margin-bottom: 1.5rem;
-      }
-      h3 {
-        margin-top: 0;
-        color: #0056b3;
+        border: 1px solid #ddd;
+        border-radius: 8px;
       }
       .form-row {
-        display: flex;
-        flex-wrap: wrap;
-        margin-bottom: 1rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
         gap: 1rem;
       }
       .form-group {
-        flex: 1 1 200px;
         margin-bottom: 1rem;
       }
       label {
@@ -78,97 +72,71 @@
         box-sizing: border-box;
       }
       button {
-        background-color: #4CAF50;
+        background-color: #0056b3;
         color: white;
-        padding: 0.5rem 1rem;
+        padding: 0.7rem 1.5rem;
         border: none;
         border-radius: 4px;
         cursor: pointer;
         font-size: 1rem;
+        margin-top: 1rem;
       }
       button:hover {
-        background-color: #45a049;
+        background-color: #003d7a;
       }
       .result {
-        margin-top: 1.5rem;
+        margin-top: 2rem;
         padding: 1rem;
         border: 1px solid #ddd;
-        border-radius: 4px;
+        border-radius: 8px;
         background-color: #f9f9f9;
       }
       .error {
         color: #d32f2f;
-        margin-top: 0.5rem;
+        padding: 1rem;
+        border: 1px solid #ffcdd2;
+        border-radius: 4px;
+        background-color: #ffebee;
+        margin-top: 1rem;
       }
       .hidden {
         display: none;
       }
-      .success {
-        color: #388e3c;
-        font-weight: bold;
-      }
-      .iva-container {
-        margin-top: 1rem;
-      }
-      .iva-item {
-        background-color: #f0f8ff;
-        padding: 0.5rem;
+      .user-info {
         margin-bottom: 0.5rem;
-        border-radius: 4px;
-        position: relative;
-      }
-      .remove-iva {
-        position: absolute;
-        right: 0.5rem;
-        top: 0.5rem;
-        background-color: #e53935;
+        text-align: right;
+        font-size: 0.9rem;
         color: white;
-        border: none;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        line-height: 24px;
-        text-align: center;
-        font-size: 14px;
-        cursor: pointer;
       }
-      .btn-auto {
-        background-color: #0056b3;
+      
+      #logoutBtn {
+        background-color: transparent;
         color: white;
-        padding: 0.5rem 1rem;
-        border: none;
+        border: 1px solid white;
+        padding: 0.2rem 0.5rem;
         border-radius: 4px;
         cursor: pointer;
         margin-left: 0.5rem;
       }
       
-      .btn-auto:hover {
-        background-color: #003d7a;
-      }
-      
-      .alert {
-        padding: 0.75rem 1.25rem;
-        margin-top: 1rem;
-        border: 1px solid transparent;
-        border-radius: 0.25rem;
-      }
-      
-      .alert-warning {
-        color: #856404;
-        background-color: #fff3cd;
-        border-color: #ffeeba;
+      #logoutBtn:hover {
+        background-color: rgba(255, 255, 255, 0.1);
       }
     </style>
   </head>
   <body>
     <header>
-      <h1>Sistema de Facturación Electrónica AFIP</h1>
+      <h1>Sistema de Consultas AFIP</h1>
+      <div class="user-info" id="userInfo">
+        <span id="userName"></span>
+        <button id="logoutBtn" class="hidden">Cerrar Sesión</button>
+      </div>
+      <nav>
+        <a href="/">Consulta de Comprobantes</a>
+        <a href="/solicitar-cae">Solicitar CAE</a>
+        <a href="/login">Login</a>
+      </nav>
     </header>
-    
-    <nav>
-      <a href="/">Consulta de Comprobantes</a>
-      <a href="/solicitar-cae">Solicitar CAE</a>
-    </nav>
     
     <main>
       <h2>Solicitud de CAE</h2>
@@ -180,7 +148,12 @@
           <div class="form-row">
             <div class="form-group">
               <label for="puntoVenta">Punto de Venta:</label>
-              <input type="number" id="puntoVenta" required min="1">
+              <select id="puntoVenta" required>
+                <option value="">Seleccionar...</option>
+                <option value="1">0001</option>
+                <option value="2">0002</option>
+                <option value="3">0003</option>
+              </select>
             </div>
             
             <div class="form-group">
@@ -199,34 +172,26 @@
             <div class="form-group">
               <label for="concepto">Concepto:</label>
               <select id="concepto" required>
-                <option value="">Seleccionar...</option>
                 <option value="1">Productos</option>
                 <option value="2">Servicios</option>
                 <option value="3">Productos y Servicios</option>
               </select>
             </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="numero">Número de Comprobante:</label>
-              <input type="number" id="numero" required min="1">
-            </div>
             
             <div class="form-group">
-              <label for="fecha">Fecha:</label>
-              <input type="date" id="fecha" required>
+              <label for="numero">Número:</label>
+              <input type="number" id="numero" readonly>
+              <button type="button" id="obtenerUltimoBtn">Obtener Último</button>
             </div>
           </div>
         </div>
         
         <div class="form-section">
-          <h3>Datos del Cliente</h3>
+          <h3>Datos del Receptor</h3>
           <div class="form-row">
             <div class="form-group">
               <label for="docTipo">Tipo de Documento:</label>
               <select id="docTipo" required>
-                <option value="">Seleccionar...</option>
                 <option value="80">CUIT</option>
                 <option value="96">DNI</option>
               </select>
@@ -234,7 +199,7 @@
             
             <div class="form-group">
               <label for="docNro">Número de Documento:</label>
-              <input type="number" id="docNro" required>
+              <input type="text" id="docNro" required>
             </div>
           </div>
         </div>
@@ -248,18 +213,6 @@
             </div>
             
             <div class="form-group">
-              <label for="importeNoGravado">Importe No Gravado:</label>
-              <input type="number" id="importeNoGravado" step="0.01" value="0">
-            </div>
-            
-            <div class="form-group">
-              <label for="importeExento">Importe Exento:</label>
-              <input type="number" id="importeExento" step="0.01" value="0">
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
               <label for="importeIVA">Importe IVA:</label>
               <input type="number" id="importeIVA" step="0.01" required>
             </div>
@@ -268,46 +221,23 @@
               <label for="importeTotal">Importe Total:</label>
               <input type="number" id="importeTotal" step="0.01" required>
             </div>
-          </div>
-        </div>
-        
-        <div class="form-section">
-          <h3>Alícuotas de IVA</h3>
-          <div id="ivaContainer" class="iva-container">
-            <!-- Los items de IVA se agregarán dinámicamente -->
-          </div>
-          
-          <div class="form-row">
+            
             <div class="form-group">
-              <label for="ivaId">Tipo de IVA:</label>
-              <select id="ivaId">
-                <option value="">Seleccionar...</option>
+              <label for="alicuotaIVA">Alícuota IVA:</label>
+              <select id="alicuotaIVA" required>
                 <option value="5">21%</option>
                 <option value="4">10.5%</option>
                 <option value="6">27%</option>
                 <option value="3">0%</option>
+                <option value="9">2.5%</option>
+                <option value="8">5%</option>
               </select>
             </div>
-            
-            <div class="form-group">
-              <label for="ivaBaseImponible">Base Imponible:</label>
-              <input type="number" id="ivaBaseImponible" step="0.01">
-            </div>
-            
-            <div class="form-group">
-              <label for="ivaImporte">Importe IVA:</label>
-              <input type="number" id="ivaImporte" step="0.01">
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <button type="button" id="agregarIvaBtn" class="btn-add">Agregar Alícuota</button>
-            <button type="button" id="agregarIvaAutomatico" class="btn-auto">Agregar IVA 21% Automático</button>
           </div>
         </div>
         
         <div class="form-section">
-          <h3>Datos Adicionales (Servicios)</h3>
+          <h3>Fechas (para servicios)</h3>
           <div class="form-row">
             <div class="form-group">
               <label for="fechaServicioDesde">Fecha Servicio Desde:</label>
@@ -329,276 +259,251 @@
         <button type="submit" id="submitBtn">Solicitar CAE</button>
       </form>
       
-      <div id="resultado" class="result hidden">
+      <div id="resultado" class="hidden">
         <h3>Resultado de la solicitud</h3>
         <div id="resultadoContenido"></div>
       </div>
       
       <div id="error" class="error hidden"></div>
     </main>
-
+    
     <script>
       // URL de la API
       const API_URL = 'http://localhost:3301/api/afip';
       
       document.addEventListener('DOMContentLoaded', () => {
-        // Obtener elementos con aserciones de tipo
-        const caeForm = document.getElementById('caeForm') as HTMLFormElement;
-        const resultadoDiv = document.getElementById('resultado') as HTMLDivElement;
-        const resultadoContenido = document.getElementById('resultadoContenido') as HTMLDivElement;
-        const errorDiv = document.getElementById('error') as HTMLDivElement;
-        const agregarIvaBtn = document.getElementById('agregarIvaBtn') as HTMLButtonElement;
-        const ivaContainer = document.getElementById('ivaContainer') as HTMLDivElement;
-        const agregarIvaAutomatico = document.getElementById('agregarIvaAutomatico') as HTMLButtonElement;
+        // Obtener elementos del DOM con comprobación de tipos
+        const caeForm = document.getElementById('caeForm');
+        const puntoVentaSelect = document.getElementById('puntoVenta') as HTMLSelectElement;
+        const tipoComprobanteSelect = document.getElementById('tipoComprobante') as HTMLSelectElement;
+        const obtenerUltimoBtn = document.getElementById('obtenerUltimoBtn');
+        const numeroInput = document.getElementById('numero') as HTMLInputElement;
+        const importeNetoInput = document.getElementById('importeNeto') as HTMLInputElement;
+        const importeIVAInput = document.getElementById('importeIVA') as HTMLInputElement;
+        const importeTotalInput = document.getElementById('importeTotal') as HTMLInputElement;
+        const alicuotaIVASelect = document.getElementById('alicuotaIVA') as HTMLSelectElement;
+        const resultadoDiv = document.getElementById('resultado');
+        const resultadoContenido = document.getElementById('resultadoContenido');
+        const errorDiv = document.getElementById('error');
+        const conceptoSelect = document.getElementById('concepto') as HTMLSelectElement;
+        const userInfo = document.getElementById('userInfo');
+        const userName = document.getElementById('userName');
+        const logoutBtn = document.getElementById('logoutBtn');
         
-        if (!caeForm || !resultadoDiv || !resultadoContenido || !errorDiv || !agregarIvaBtn || !ivaContainer) {
-          console.error('No se pudieron encontrar elementos DOM necesarios');
-          return;
-        }
-        
-        // Definir la interfaz para las alícuotas de IVA
-        interface IvaAlicuota {
-          Id: number;
-          BaseImp: number;
-          Importe: number;
-        }
-        
-        // Array para almacenar las alícuotas de IVA
-        const ivaItems: IvaAlicuota[] = [];
-        
-        // Agregar alícuota de IVA
-        agregarIvaBtn.addEventListener('click', () => {
-          const ivaId = (document.getElementById('ivaId') as HTMLSelectElement).value;
-          const ivaBaseImponible = (document.getElementById('ivaBaseImponible') as HTMLInputElement).value;
-          const ivaImporte = (document.getElementById('ivaImporte') as HTMLInputElement).value;
-          
-          if (!ivaId || !ivaBaseImponible || !ivaImporte) {
-            alert('Complete todos los campos de la alícuota de IVA');
-            return;
+        // Verificar si hay un usuario conectado
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          if (userName) {
+            userName.textContent = `Usuario: ${user.name}`;
           }
-          
-          // Crear objeto de alícuota
-          const alicuota: IvaAlicuota = {
-            Id: parseInt(ivaId),
-            BaseImp: parseFloat(ivaBaseImponible),
-            Importe: parseFloat(ivaImporte)
-          };
-          
-          // Agregar al array
-          ivaItems.push(alicuota);
-          
-          // Actualizar UI
-          renderIvaItems();
-          
-          // Limpiar campos
-          (document.getElementById('ivaId') as HTMLSelectElement).value = '';
-          (document.getElementById('ivaBaseImponible') as HTMLInputElement).value = '';
-          (document.getElementById('ivaImporte') as HTMLInputElement).value = '';
-        });
-        
-        // Función para renderizar los items de IVA
-        function renderIvaItems() {
-          ivaContainer.innerHTML = '';
-          
-          ivaItems.forEach((item, index) => {
-            const ivaTypeName = getIvaTypeName(item.Id);
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'iva-item';
-            itemDiv.innerHTML = `
-              <button type="button" class="remove-iva" data-index="${index}">✕</button>
-              <p><strong>Tipo:</strong> ${ivaTypeName}</p>
-              <p><strong>Base Imponible:</strong> $${item.BaseImp.toFixed(2)}</p>
-              <p><strong>Importe:</strong> $${item.Importe.toFixed(2)}</p>
-            `;
-            ivaContainer.appendChild(itemDiv);
-          });
-          
-          // Agregar listeners para los botones de eliminar
-          document.querySelectorAll('.remove-iva').forEach(btn => {
-            btn.addEventListener('click', function() {
-              const index = parseInt(this.getAttribute('data-index') || '0');
-              ivaItems.splice(index, 1);
-              renderIvaItems();
+          if (logoutBtn) {
+            logoutBtn.classList.remove('hidden');
+            
+            // Agregar funcionalidad al botón de logout
+            logoutBtn.addEventListener('click', () => {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              window.location.reload();
             });
-          });
-        }
-        
-        // Obtener nombre del tipo de IVA
-        function getIvaTypeName(id: number): string {
-          const ivaTypes: Record<number, string> = {
-            3: 'IVA 0%',
-            4: 'IVA 10.5%',
-            5: 'IVA 21%',
-            6: 'IVA 27%'
-          };
-          return ivaTypes[id] || 'Desconocido';
-        }
-        
-        // Agregar IVA 21% automáticamente
-        if (agregarIvaAutomatico) {
-          agregarIvaAutomatico.addEventListener('click', () => {
-            const importeNeto = parseFloat((document.getElementById('importeNeto') as HTMLInputElement).value);
-            
-            if (!importeNeto || isNaN(importeNeto)) {
-              alert('Debe ingresar un importe neto válido para calcular el IVA automáticamente');
-              return;
-            }
-            
-            // Calcular IVA 21%
-            const baseImponible = importeNeto;
-            const iva = Math.round(baseImponible * 0.21 * 100) / 100; // Redondeo a 2 decimales
-            
-            // Crear objeto de alícuota
-            const alicuota: IvaAlicuota = {
-              Id: 5, // Código para IVA 21%
-              BaseImp: baseImponible,
-              Importe: iva
-            };
-            
-            // Agregar al array
-            ivaItems.push(alicuota);
-            
-            // Actualizar UI
-            renderIvaItems();
-            
-            // Actualizar importes totales
-            (document.getElementById('importeIVA') as HTMLInputElement).value = iva.toFixed(2);
-            (document.getElementById('importeTotal') as HTMLInputElement).value = (importeNeto + iva).toFixed(2);
-          });
-        }
-        
-        // Enviar formulario
-        caeForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          
-          // Ocultar mensajes anteriores
-          resultadoDiv.classList.add('hidden');
-          errorDiv.classList.add('hidden');
-          
-          try {
-            // Recopilar datos del formulario
-            const importeNeto = parseFloat((document.getElementById('importeNeto') as HTMLInputElement).value);
-            
-            // Verificar si hay alícuotas de IVA cuando el importe neto es mayor a cero
-            if (importeNeto > 0 && ivaItems.length === 0) {
-              // Si no hay alícuotas, mostrar error
-              errorDiv.textContent = 'Si el Importe Neto es mayor a 0, debe agregar al menos una alícuota de IVA.';
-              errorDiv.classList.remove('hidden');
-              return;
-            }
-            
-            const datosComprobante = {
-              puntoVenta: parseInt((document.getElementById('puntoVenta') as HTMLSelectElement).value),
-              tipoComprobante: parseInt((document.getElementById('tipoComprobante') as HTMLSelectElement).value),
-              concepto: parseInt((document.getElementById('concepto') as HTMLSelectElement).value),
-              numero: parseInt((document.getElementById('numero') as HTMLInputElement).value),
-              fecha: (document.getElementById('fecha') as HTMLInputElement).value,
-              docTipo: parseInt((document.getElementById('docTipo') as HTMLSelectElement).value),
-              docNro: parseInt((document.getElementById('docNro') as HTMLInputElement).value),
-              importeNeto: parseFloat((document.getElementById('importeNeto') as HTMLInputElement).value),
-              importeNoGravado: parseFloat((document.getElementById('importeNoGravado') as HTMLInputElement).value || '0'),
-              importeExento: parseFloat((document.getElementById('importeExento') as HTMLInputElement).value || '0'),
-              importeIVA: parseFloat((document.getElementById('importeIVA') as HTMLInputElement).value),
-              importeTotal: parseFloat((document.getElementById('importeTotal') as HTMLInputElement).value),
-              fechaServicioDesde: (document.getElementById('fechaServicioDesde') as HTMLInputElement).value || null,
-              fechaServicioHasta: (document.getElementById('fechaServicioHasta') as HTMLInputElement).value || null,
-              fechaVencimientoPago: (document.getElementById('fechaVencimientoPago') as HTMLInputElement).value || null,
-              iva: ivaItems
-            };
-            
-            console.log('Enviando datos:', datosComprobante);
-            
-            // Llamada a la API
-            const response = await fetch(`${API_URL}/obtener-cae`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(datosComprobante)
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-              console.log("Respuesta exitosa:", data);
-              resultadoContenido.innerHTML = `
-                <p class="success">¡CAE obtenido exitosamente!</p>
-                <div class="result-item">
-                  <strong>CAE:</strong> ${data.cae}
-                </div>
-                <div class="result-item">
-                  <strong>Vencimiento CAE:</strong> ${data.fechaVencimientoCAE}
-                </div>
-              `;
-              resultadoDiv.classList.remove('hidden');
-            } else {
-              console.error("Error en respuesta:", data);
-              errorDiv.textContent = data.error || 'Ocurrió un error al procesar la solicitud.';
-              errorDiv.classList.remove('hidden');
-            }
-          } catch (error) {
-            console.error('Error:', error);
-            errorDiv.textContent = 'Error al conectar con el servidor.';
-            errorDiv.classList.remove('hidden');
           }
-        });
+        } else {
+          // Redirigir al login si no hay usuario
+          window.location.href = '/login';
+        }
         
-        // Función para obtener el último número de comprobante
+        // Función para obtener el último comprobante
         const obtenerUltimoComprobante = async () => {
           try {
-            const puntoVenta = (document.getElementById('puntoVenta') as HTMLSelectElement).value;
-            const tipoComprobante = (document.getElementById('tipoComprobante') as HTMLSelectElement).value;
-            const numero = document.getElementById('numero') as HTMLInputElement;
-            
-            if (!puntoVenta || !tipoComprobante) {
-              alert('Seleccione un punto de venta y tipo de comprobante');
+            if (!puntoVentaSelect || !tipoComprobanteSelect || !numeroInput || !errorDiv) {
+              console.error('No se encontraron elementos necesarios');
               return;
             }
             
-            const response = await fetch(`${API_URL}/comprobante?tipo=${tipoComprobante}&punto_venta=${puntoVenta}`);
+            const puntoVenta = puntoVentaSelect.value;
+            const tipoComprobante = tipoComprobanteSelect.value;
+            
+            if (!puntoVenta || !tipoComprobante) {
+              if (errorDiv) {
+                errorDiv.textContent = 'Debe seleccionar punto de venta y tipo de comprobante';
+                errorDiv.classList.remove('hidden');
+              }
+              return;
+            }
+            
+            // Agregar token de autenticación si existe
+            const token = localStorage.getItem('token');
+            const headers: Record<string, string> = {};
+            
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            const response = await fetch(
+              `${API_URL}/ultimo-comprobante?puntoVenta=${puntoVenta}&tipoComprobante=${tipoComprobante}`, 
+              { headers }
+            );
+            
+            if (response.status === 401 || response.status === 403) {
+              // Redirigir al login si es necesario
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              window.location.href = '/login';
+              return;
+            }
+            
             const data = await response.json();
             
             if (data.success) {
-              // Sumar 1 al último número para obtener el siguiente
-              const siguienteNumero = data.ultimoComprobante + 1;
-              numero.value = siguienteNumero.toString();
+              // Incrementar en 1 el último comprobante
+              const ultimoComprobante = parseInt(data.ultimoComprobante);
+              const siguiente = ultimoComprobante + 1;
+              numeroInput.value = siguiente.toString();
+              
+              if (errorDiv) {
+                errorDiv.classList.add('hidden');
+              }
             } else {
-              alert(`Error al obtener el último comprobante: ${data.error}`);
+              if (errorDiv) {
+                errorDiv.textContent = data.error || 'Ocurrió un error al consultar AFIP';
+                errorDiv.classList.remove('hidden');
+              }
             }
           } catch (error) {
             console.error('Error:', error);
-            alert('Error al conectar con el servidor');
+            if (errorDiv) {
+              errorDiv.textContent = 'Error al conectar con el servidor';
+              errorDiv.classList.remove('hidden');
+            }
           }
         };
         
-        // Agregar listener para botón de obtener último comprobante
-        const obtenerUltimoBtn = document.getElementById('obtenerUltimoBtn') as HTMLButtonElement;
+        // Manejar click en botón obtener último comprobante
         if (obtenerUltimoBtn) {
           obtenerUltimoBtn.addEventListener('click', obtenerUltimoComprobante);
         }
         
-        // Agregar listener para calcular totales automáticamente
-        const calcularTotalesBtn = document.getElementById('calcularTotalesBtn') as HTMLButtonElement;
-        if (calcularTotalesBtn) {
-          calcularTotalesBtn.addEventListener('click', () => {
-            const importeNeto = parseFloat((document.getElementById('importeNeto') as HTMLInputElement).value);
+        // Calcular importes IVA y total cuando cambia el neto o la alícuota
+        if (importeNetoInput && alicuotaIVASelect && importeIVAInput && importeTotalInput) {
+          const calcularImportes = () => {
+            const neto = parseFloat(importeNetoInput.value) || 0;
+            let alicuotaValue = 0;
             
-            if (!importeNeto || isNaN(importeNeto)) {
-              alert('Debe ingresar un importe neto válido');
-              return;
+            // Mapear el ID de alícuota a su valor porcentual
+            switch (alicuotaIVASelect.value) {
+              case '5': alicuotaValue = 21; break;  // 21%
+              case '4': alicuotaValue = 10.5; break; // 10.5%
+              case '6': alicuotaValue = 27; break;  // 27%
+              case '3': alicuotaValue = 0; break;   // 0%
+              case '9': alicuotaValue = 2.5; break; // 2.5%
+              case '8': alicuotaValue = 5; break;   // 5%
+              default: alicuotaValue = 21;          // Default 21%
             }
             
-            // Sumar todos los importes de IVA del array ivaItems
-            const totalIVA = ivaItems.reduce((sum, item) => sum + item.Importe, 0);
+            const iva = neto * (alicuotaValue / 100);
+            const total = neto + iva;
             
-            const importeNoGravado = parseFloat((document.getElementById('importeNoGravado') as HTMLInputElement).value || '0');
-            const importeExento = parseFloat((document.getElementById('importeExento') as HTMLInputElement).value || '0');
+            importeIVAInput.value = iva.toFixed(2);
+            importeTotalInput.value = total.toFixed(2);
+          };
+          
+          importeNetoInput.addEventListener('input', calcularImportes);
+          alicuotaIVASelect.addEventListener('change', calcularImportes);
+        }
+        
+        // Manejar envío del formulario
+        if (caeForm && resultadoDiv && resultadoContenido && errorDiv) {
+          caeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             
-            // Calcular total
-            const total = importeNeto + totalIVA + importeNoGravado + importeExento;
-            
-            (document.getElementById('importeIVA') as HTMLInputElement).value = totalIVA.toFixed(2);
-            (document.getElementById('importeTotal') as HTMLInputElement).value = total.toFixed(2);
+            try {
+              // Recopilar todos los datos del formulario
+              const formData = {
+                puntoVenta: (document.getElementById('puntoVenta') as HTMLSelectElement)?.value,
+                tipoComprobante: (document.getElementById('tipoComprobante') as HTMLSelectElement)?.value,
+                concepto: (document.getElementById('concepto') as HTMLSelectElement)?.value,
+                numero: (document.getElementById('numero') as HTMLInputElement)?.value,
+                docTipo: (document.getElementById('docTipo') as HTMLSelectElement)?.value,
+                docNro: (document.getElementById('docNro') as HTMLInputElement)?.value,
+                importeNeto: (document.getElementById('importeNeto') as HTMLInputElement)?.value,
+                importeIVA: (document.getElementById('importeIVA') as HTMLInputElement)?.value,
+                importeTotal: (document.getElementById('importeTotal') as HTMLInputElement)?.value,
+                fecha: new Date().toISOString().slice(0, 10).replace(/-/g, ''), // Formato AAAAMMDD
+                alicuotaIVA: (document.getElementById('alicuotaIVA') as HTMLSelectElement)?.value,
+                fechaServicioDesde: (document.getElementById('fechaServicioDesde') as HTMLInputElement)?.value?.replace(/-/g, ''),
+                fechaServicioHasta: (document.getElementById('fechaServicioHasta') as HTMLInputElement)?.value?.replace(/-/g, ''),
+                fechaVencimientoPago: (document.getElementById('fechaVencimientoPago') as HTMLInputElement)?.value?.replace(/-/g, '')
+              };
+              
+              // Validar datos básicos
+              if (!formData.puntoVenta || !formData.tipoComprobante || !formData.numero || !formData.docNro || !formData.importeTotal) {
+                errorDiv.textContent = 'Debe completar todos los campos obligatorios';
+                errorDiv.classList.remove('hidden');
+                return;
+              }
+              
+              // Preparar datos específicos para la solicitud de CAE
+              const requestData = {
+                ...formData,
+                // Agregar IVA como array para la API
+                iva: [{
+                  Id: formData.alicuotaIVA,
+                  BaseImp: parseFloat(formData.importeNeto),
+                  Importe: parseFloat(formData.importeIVA)
+                }]
+              };
+              
+              // Agregar token de autenticación
+              const token = localStorage.getItem('token');
+              const headers: Record<string, string> = {
+                'Content-Type': 'application/json'
+              };
+              
+              if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+              }
+              
+              const response = await fetch(`${API_URL}/obtener-cae`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(requestData)
+              });
+              
+              if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                return;
+              }
+              
+              const data = await response.json();
+              
+              if (data.success) {
+                // Mostrar resultado exitoso
+                console.log(data);
+                
+                resultadoContenido.innerHTML = `
+                  <div class="success-message">
+                    <p><strong>CAE obtenido exitosamente:</strong> ${data.cae}</p>
+                    <p><strong>Vencimiento CAE:</strong> ${data.fechaVencimientoCAE}</p>
+                    <p><strong>Comprobante:</strong> ${formData.tipoComprobante}-${formData.puntoVenta.padStart(5, '0')}-${formData.numero.padStart(8, '0')}</p>
+                  </div>
+                `;
+                
+                resultadoDiv.classList.remove('hidden');
+                errorDiv.classList.add('hidden');
+              } else {
+                // Mostrar error
+                errorDiv.textContent = data.error || 'Ocurrió un error al solicitar el CAE';
+                errorDiv.classList.remove('hidden');
+                resultadoDiv.classList.add('hidden');
+              }
+            } catch (error) {
+              console.error('Error:', error);
+              errorDiv.textContent = 'Error al conectar con el servidor';
+              errorDiv.classList.remove('hidden');
+              resultadoDiv.classList.add('hidden');
+            }
           });
         }
       });

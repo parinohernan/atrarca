@@ -11,6 +11,8 @@ console.log("AFIP_CUIT:", process.env.AFIP_CUIT);
 const express = require("express");
 const cors = require("cors");
 const afipRoutes = require("./routes/afip.routes");
+const authRoutes = require("./routes/auth.routes");
+const { authenticateToken } = require("./middleware/auth.middleware");
 
 const app = express();
 const PORT = process.env.PORT || 3301;
@@ -19,8 +21,11 @@ const PORT = process.env.PORT || 3301;
 app.use(cors());
 app.use(express.json());
 
-// Rutas
-app.use("/api/afip", afipRoutes);
+// Rutas públicas (sin autenticación)
+app.use("/api/auth", authRoutes);
+
+// Rutas protegidas (requieren autenticación)
+app.use("/api/afip", authenticateToken, afipRoutes);
 
 // Ruta base
 app.get("/", (req, res) => {

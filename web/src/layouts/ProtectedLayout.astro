@@ -1,0 +1,156 @@
+---
+const { title } = Astro.props;
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title} - Sistema AFIP</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5f5;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      
+      header {
+        background-color: #00395d;
+        color: white;
+        padding: 1rem;
+      }
+      
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      
+      .user-info {
+        display: flex;
+        align-items: center;
+      }
+      
+      .username {
+        margin-right: 1rem;
+      }
+      
+      .logout-btn {
+        background-color: transparent;
+        border: 1px solid white;
+        color: white;
+        padding: 0.3rem 0.7rem;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      
+      .logout-btn:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+      
+      nav {
+        background-color: #0056b3;
+        padding: 0.5rem;
+      }
+      
+      nav ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+      }
+      
+      nav li {
+        margin: 0 1rem;
+      }
+      
+      nav a {
+        color: white;
+        text-decoration: none;
+        padding: 0.5rem;
+        border-radius: 4px;
+      }
+      
+      nav a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+      
+      main {
+        flex: 1;
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      
+      footer {
+        background-color: #f0f0f0;
+        text-align: center;
+        padding: 1rem;
+        margin-top: auto;
+      }
+      
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  
+  <body>
+    <header>
+      <div class="header-content">
+        <h1>Sistema de Gestión AFIP</h1>
+        <div class="user-info">
+          <span class="username" id="userDisplay"></span>
+          <button class="logout-btn" id="logoutBtn">Cerrar Sesión</button>
+        </div>
+      </div>
+    </header>
+    
+    <nav>
+      <ul>
+        <li><a href="/dashboard">Inicio</a></li>
+        <li><a href="/solicitar-cae">Solicitar CAE</a></li>
+        <li><a href="/cotizaciones">Cotizaciones</a></li>
+      </ul>
+    </nav>
+    
+    <main>
+      <slot />
+    </main>
+    
+    <footer>
+      <p>&copy; 2023 Sistema de Gestión AFIP</p>
+    </footer>
+    
+    <script type="module">
+      import { getCurrentUser, logout, checkAuth } from '../scripts/auth.js';
+      
+      document.addEventListener('DOMContentLoaded', async () => {
+        // Verificar autenticación
+        const isAuth = await checkAuth();
+        if (!isAuth) return; // El checkAuth ya redirige si es necesario
+        
+        // Mostrar información del usuario
+        const userDisplay = document.getElementById('userDisplay');
+        const user = getCurrentUser();
+        
+        if (user) {
+          userDisplay.textContent = `${user.name} ${user.empresa ? `(${user.empresa.razonSocial})` : ''}`;
+        }
+        
+        // Configurar botón de logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        logoutBtn.addEventListener('click', () => {
+          logout();
+        });
+      });
+    </script>
+  </body>
+</html> 
