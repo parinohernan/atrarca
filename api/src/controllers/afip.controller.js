@@ -68,8 +68,8 @@ exports.createComprobante = async (req, res) => {
 
     // Llamar al servicio AFIP para obtener el CAE
     const resultado = await afipService.obtenerCAE(datosComprobante);
-
-    res.json(resultado);
+    // console.log("resultado", JSON.stringify(resultado));
+    res.status(200).JSON.stringify(resultado);
   } catch (error) {
     console.error("Error al solicitar CAE:", error);
     res.status(500).json({
@@ -142,6 +142,29 @@ exports.getMetodosDisponibles = async (req, res) => {
     console.error("Error al consultar métodos disponibles:", error);
     res.status(500).json({
       error: error.message || "Error al consultar métodos disponibles",
+    });
+  }
+};
+
+exports.getCotizacion = async (req, res) => {
+  try {
+    const { moneda } = req.params;
+
+    if (!moneda) {
+      return res.status(400).json({
+        error: "Debe proporcionar el código de moneda (ej: DOL para dólar)",
+      });
+    }
+
+    console.log(`Consultando cotización para moneda: ${moneda}`);
+
+    const resultado = await afipService.consultarCotizacion(moneda);
+    res.json(resultado);
+  } catch (error) {
+    console.error("Error al consultar cotización:", error);
+    res.status(500).json({
+      error: "Error al consultar cotización",
+      detalle: error.message,
     });
   }
 };

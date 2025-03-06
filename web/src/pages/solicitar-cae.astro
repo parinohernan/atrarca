@@ -132,6 +132,32 @@
         font-size: 14px;
         cursor: pointer;
       }
+      .btn-auto {
+        background-color: #0056b3;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 0.5rem;
+      }
+      
+      .btn-auto:hover {
+        background-color: #003d7a;
+      }
+      
+      .alert {
+        padding: 0.75rem 1.25rem;
+        margin-top: 1rem;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+      }
+      
+      .alert-warning {
+        color: #856404;
+        background-color: #fff3cd;
+        border-color: #ffeeba;
+      }
     </style>
   </head>
   <body>
@@ -274,7 +300,10 @@
             </div>
           </div>
           
-          <button type="button" id="agregarIva">Agregar Alícuota IVA</button>
+          <div class="form-row">
+            <button type="button" id="agregarIvaBtn" class="btn-add">Agregar Alícuota</button>
+            <button type="button" id="agregarIvaAutomatico" class="btn-auto">Agregar IVA 21% Automático</button>
+          </div>
         </div>
         
         <div class="form-section">
@@ -317,7 +346,7 @@
         const resultadoDiv = document.getElementById('resultado');
         const resultadoContenido = document.getElementById('resultadoContenido');
         const errorDiv = document.getElementById('error');
-        const agregarIvaBtn = document.getElementById('agregarIva');
+        const agregarIvaBtn = document.getElementById('agregarIvaBtn');
         const ivaContainer = document.getElementById('ivaContainer');
         
         // Array para almacenar las alícuotas de IVA
@@ -401,6 +430,16 @@
           
           try {
             // Recopilar datos del formulario
+            const importeNeto = parseFloat(document.getElementById('importeNeto').value);
+            
+            // Verificar si hay alícuotas de IVA cuando el importe neto es mayor a cero
+            if (importeNeto > 0 && ivaItems.length === 0) {
+              // Si no hay alícuotas, mostrar error
+              errorDiv.textContent = 'Si el Importe Neto es mayor a 0, debe agregar al menos una alícuota de IVA.';
+              errorDiv.classList.remove('hidden');
+              return;
+            }
+            
             const datosComprobante = {
               puntoVenta: parseInt(document.getElementById('puntoVenta').value),
               tipoComprobante: parseInt(document.getElementById('tipoComprobante').value),
@@ -471,7 +510,43 @@
           // Calcular total
           const importeTotal = importeNeto + importeIVA + importeNoGravado + importeExento;
           document.getElementById('importeTotal').value = importeTotal.toFixed(2);
+          
+          // Si no hay alícuotas de IVA añadidas y el importe neto es mayor a 0,
+          // podemos sugerir al usuario que agregue una
+          if (importeNeto > 0 && ivaItems.length === 0) {
+            const ivaMsg = document.getElementById('ivaMessage') || document.createElement('div');
+            ivaMsg.id = 'ivaMessage';
+            ivaMsg.className = 'alert alert-warning';
+            ivaMsg.textContent = 'Recuerde agregar al menos una alícuota de IVA para el importe neto.';
+            
+            // Insertar mensaje después de la sección de IVA
+            const ivaSection = document.querySelector('.form-section:nth-child(3)');
+            if (ivaSection && !document.getElementById('ivaMessage')) {
+              ivaSection.appendChild(ivaMsg);
+            }
+          } else if (importeNeto === 0) {
+            // Quitar el mensaje si importe neto es 0
+            const ivaMsg = document.getElementById('ivaMessage');
+            if (ivaMsg) ivaMsg.remove();
+          }
         }
+        
+        // Agregar esta función para añadir automáticamente IVA 21% a partir del importe neto
+        document.getElementById('agregarIvaAutomatico').addEventListener('click', () => {
+          const importeNeto = parseFloat(document.getElementById('importeNeto').value) || 0;
+          if (importeNeto <= 0) {
+            alert('Ingrese un importe neto mayor a 0 para agregar IVA automáticamente');
+            return;
+          }
+          
+          // Agregar IVA 21% 
+          document.getElementById('ivaId').value = '5'; // 5 es el código para 21%
+          document.getElementById('ivaBaseImponible').value = importeNeto.toFixed(2);
+          document.getElementById('ivaImporte').value = (importeNeto * 0.21).toFixed(2);
+          
+          // Simular clic en el botón para agregar
+          document.getElementById('agregarIvaBtn').click();
+        });
       });
     </script>
   </body>

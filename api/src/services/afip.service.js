@@ -539,11 +539,18 @@ class AfipService {
         throw new Error("Respuesta de AFIP sin detalles del CAE");
       }
 
-      const detalle = resultado.FECAESolicitarResult.FeDetResp.FECAEDetResponse;
+      // Obtener el detalle de la respuesta (como puede ser un array, aseguramos acceder al primer elemento)
+      const detalle = Array.isArray(
+        resultado.FECAESolicitarResult.FeDetResp.FECAEDetResponse
+      )
+        ? resultado.FECAESolicitarResult.FeDetResp.FECAEDetResponse[0]
+        : resultado.FECAESolicitarResult.FeDetResp.FECAEDetResponse;
 
       console.log("Detalle de respuesta CAE:", JSON.stringify(detalle));
 
-      // Verificar si hay CAE en la respuesta
+      // Verificar si hay CAE en la respuesta y es válido
+      console.log("Verificando CAE recibido:", detalle.CAE);
+
       if (!detalle.CAE || detalle.CAE === "") {
         console.warn("No se recibió CAE en la respuesta");
 
@@ -601,6 +608,86 @@ class AfipService {
     const mes = fechaString.substr(4, 2);
     const dia = fechaString.substr(6, 2);
     return `${dia}/${mes}/${año}`;
+  }
+
+  async consultarCotizacion(moneda) {
+    try {
+      console.log(`Consultando cotización para moneda: ${moneda}`);
+
+      // Obtener cliente SOAP
+      const client = await this.getWSFEClient();
+      if (!client) {
+        throw new Error("No se pudo obtener el cliente SOAP");
+      }
+
+      // Obtener datos de autenticación
+      const auth = await this.getAuthData();
+      console.log(
+        "Datos de autenticación obtenidos para consulta de cotización"
+      );
+
+      // Preparar parámetros (MonId es el código de moneda según AFIP)
+      const params = {
+        Auth: auth,
+        MonId: moneda.toUpperCase(),
+      };
+
+      console.log(
+        `Enviando consulta de cotización a AFIP para moneda: ${moneda}`
+      );
+
+      // Ejecutar consulta
+      const resultado = await new Promise((resolve, reject) => {
+        client.FEParamGetCotizacion(params, function (err, result) {
+          if (err) {
+            console.error("Error en llamada a FEParamGetCotizacion:", err);
+            return reject(err);
+          }
+          if (!result) {
+            console.error("Respuesta vacía de AFIP");
+            return reject(new Error("Respuesta vacía de AFIP"));
+          }
+          resolve(result);
+        });
+      });
+
+      console.log(
+        "Respuesta de cotización recibida:",
+        JSON.stringify(resultado)
+      );
+
+      // Verificar si hay errores en la respuesta
+      if (resultado.FEParamGetCotizacionResult.Errors) {
+        const errorInfo = resultado.FEParamGetCotizacionResult.Errors.Err;
+        if (Array.isArray(errorInfo)) {
+          const errorMsg = errorInfo
+            .map((e) => `Error ${e.Code}: ${e.Msg}`)
+            .join("; ");
+          throw new Error(errorMsg);
+        } else if (errorInfo) {
+          throw new Error(`Error ${errorInfo.Code}: ${errorInfo.Msg}`);
+        }
+      }
+
+      // Verificar que la respuesta tenga la estructura esperada
+      if (!resultado.FEParamGetCotizacionResult.ResultGet) {
+        throw new Error("Respuesta de AFIP con formato inesperado");
+      }
+
+      // Extraer datos de la cotización
+      const cotizacionData = resultado.FEParamGetCotizacionResult.ResultGet;
+
+      return {
+        success: true,
+        moneda: cotizacionData.MonId,
+        fecha: this.formatearFecha(cotizacionData.FchCotiz),
+        cotizacion: parseFloat(cotizacionData.MonCotiz),
+        respuestaCompleta: cotizacionData,
+      };
+    } catch (error) {
+      console.error("Error al consultar cotización:", error);
+      throw new Error(`Error al consultar cotización: ${error.message}`);
+    }
   }
 }
 

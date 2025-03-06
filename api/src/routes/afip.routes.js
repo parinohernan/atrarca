@@ -10,6 +10,8 @@ router.get(
   afipController.getCondicionesIVAReceptor
 );
 router.get("/tipos-comprobantes", afipController.getTiposComprobantes);
+// Nuevo endpoint para cotización de monedas
+router.get("/cotizacion/:moneda", afipController.getCotizacion);
 // Obtener CAE
 router.post("/obtener-cae", afipController.obtenerCAE);
 router.post("/comprobante", afipController.createComprobante);
