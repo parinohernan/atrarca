@@ -1,10 +1,16 @@
+// Cargar dotenv al inicio, antes de cualquier otro import
+require("dotenv").config({
+  path: require("path").resolve(__dirname, "../.env"),
+});
+
+// Verificar que se cargó correctamente
+console.log("Variables de entorno cargadas:");
+console.log("AFIP_MODE:", process.env.AFIP_MODE);
+console.log("AFIP_CUIT:", process.env.AFIP_CUIT);
+
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const afipRoutes = require("./routes/afip.routes");
-
-// Cargar variables de entorno
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3301;

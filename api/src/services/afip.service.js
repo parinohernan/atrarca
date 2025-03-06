@@ -14,10 +14,9 @@ const URLS = {
 class AfipService {
   constructor() {
     this.mode = process.env.AFIP_MODE || "testing";
-    this.cuit = process.env.AFIP_CUIT || "20278280641";
+    this.cuit = process.env.AFIP_CUIT;
     this.wsfeClient = null;
   }
-
   async getWSFEClient() {
     if (!this.wsfeClient) {
       try {

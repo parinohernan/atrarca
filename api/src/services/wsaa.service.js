@@ -16,11 +16,9 @@ class WSAAService {
   constructor() {
     // Configuración general
     this.mode = process.env.AFIP_MODE || "testing";
-    this.cuit = process.env.AFIP_CUIT || "20278280641";
-    this.certPath =
-      process.env.AFIP_CERT_PATH || path.resolve(__dirname, "../certs/jhp.crt");
-    this.keyPath =
-      process.env.AFIP_KEY_PATH || path.resolve(__dirname, "../certs/jhp.key");
+    this.cuit = process.env.AFIP_CUIT;
+    this.certPath = process.env.AFIP_CERT_PATH;
+    this.keyPath = process.env.AFIP_KEY_PATH;
     this.tokenPath = path.resolve(__dirname, "../temp/");
     this.tokens = {};
   }
