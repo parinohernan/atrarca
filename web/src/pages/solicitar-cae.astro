@@ -419,20 +419,20 @@
             try {
               // Recopilar todos los datos del formulario
               const formData = {
-                puntoVenta: (document.getElementById('puntoVenta') as HTMLSelectElement)?.value,
-                tipoComprobante: (document.getElementById('tipoComprobante') as HTMLSelectElement)?.value,
-                concepto: (document.getElementById('concepto') as HTMLSelectElement)?.value,
-                numero: (document.getElementById('numero') as HTMLInputElement)?.value,
-                docTipo: (document.getElementById('docTipo') as HTMLSelectElement)?.value,
-                docNro: (document.getElementById('docNro') as HTMLInputElement)?.value,
-                importeNeto: (document.getElementById('importeNeto') as HTMLInputElement)?.value,
-                importeIVA: (document.getElementById('importeIVA') as HTMLInputElement)?.value,
-                importeTotal: (document.getElementById('importeTotal') as HTMLInputElement)?.value,
+                puntoVenta: (document.getElementById('puntoVenta') as HTMLSelectElement)?.value || '',
+                tipoComprobante: (document.getElementById('tipoComprobante') as HTMLSelectElement)?.value || '',
+                concepto: (document.getElementById('concepto') as HTMLSelectElement)?.value || '',
+                numero: (document.getElementById('numero') as HTMLInputElement)?.value || '',
+                docTipo: (document.getElementById('docTipo') as HTMLSelectElement)?.value || '',
+                docNro: (document.getElementById('docNro') as HTMLInputElement)?.value || '',
+                importeNeto: (document.getElementById('importeNeto') as HTMLInputElement)?.value || '',
+                importeIVA: (document.getElementById('importeIVA') as HTMLInputElement)?.value || '',
+                importeTotal: (document.getElementById('importeTotal') as HTMLInputElement)?.value || '',
                 fecha: new Date().toISOString().slice(0, 10).replace(/-/g, ''), // Formato AAAAMMDD
-                alicuotaIVA: (document.getElementById('alicuotaIVA') as HTMLSelectElement)?.value,
-                fechaServicioDesde: (document.getElementById('fechaServicioDesde') as HTMLInputElement)?.value?.replace(/-/g, ''),
-                fechaServicioHasta: (document.getElementById('fechaServicioHasta') as HTMLInputElement)?.value?.replace(/-/g, ''),
-                fechaVencimientoPago: (document.getElementById('fechaVencimientoPago') as HTMLInputElement)?.value?.replace(/-/g, '')
+                alicuotaIVA: (document.getElementById('alicuotaIVA') as HTMLSelectElement)?.value || '',
+                fechaServicioDesde: (document.getElementById('fechaServicioDesde') as HTMLInputElement)?.value?.replace(/-/g, '') || '',
+                fechaServicioHasta: (document.getElementById('fechaServicioHasta') as HTMLInputElement)?.value?.replace(/-/g, '') || '',
+                fechaVencimientoPago: (document.getElementById('fechaVencimientoPago') as HTMLInputElement)?.value?.replace(/-/g, '') || ''
               };
               
               // Validar datos básicos
@@ -447,9 +447,9 @@
                 ...formData,
                 // Agregar IVA como array para la API
                 iva: [{
-                  Id: formData.alicuotaIVA,
-                  BaseImp: parseFloat(formData.importeNeto),
-                  Importe: parseFloat(formData.importeIVA)
+                  Id: parseInt(formData.alicuotaIVA || '0'),
+                  BaseImp: parseFloat(formData.importeNeto || '0'),
+                  Importe: parseFloat(formData.importeIVA || '0')
                 }]
               };
               

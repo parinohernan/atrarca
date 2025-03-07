@@ -142,6 +142,13 @@
             <option value="1">0001</option>
             <option value="2">0002</option>
             <option value="3">0003</option>
+            <option value="4">0004</option>
+            <option value="5">0005</option>
+            <option value="6">0006</option>
+            <option value="7">0007</option>
+            <option value="8">0008</option>
+            <option value="9">0009</option>
+            
           </select>
         </div>
         
@@ -219,6 +226,8 @@
             
             const data = await response.json();
             
+            console.log('Respuesta del servidor:', data);
+            
             if (data.success) {
               // Limpiar contenido anterior
               resultadoContenido.innerHTML = '';
@@ -251,11 +260,11 @@
               resultadoContenido.appendChild(table);
               resultadoDiv.classList.remove('hidden');
             } else {
-              errorDiv.textContent = data.error || 'Ocurrió un error al procesar la solicitud.';
+              errorDiv.textContent = data.detalle || 'Ocurrió un error al procesar la solicitud.';
               errorDiv.classList.remove('hidden');
             }
           } catch (error) {
-            console.error('Error:', error);
+            console.error('Error completo:', error);
             errorDiv.textContent = 'Error al conectar con el servidor.';
             errorDiv.classList.remove('hidden');
           }
@@ -283,8 +292,11 @@
           
           // Agregar funcionalidad al botón de logout
           logoutBtn.addEventListener('click', () => {
+            // Limpiar localStorage
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            
+            // Recargar la página
             window.location.reload();
           });
         }

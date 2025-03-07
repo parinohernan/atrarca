@@ -17,7 +17,7 @@ class WSAAService {
     // Configuración general
     this.mode = process.env.AFIP_MODE || "testing";
     this.tokenPath = path.resolve(__dirname, "../temp/");
-    this.tokens = {};
+    this.tokens = {}; // Será un objeto con formato: {cuit: {service: tokenData}}
   }
 
   // Método para establecer la empresa actual
@@ -30,12 +30,75 @@ class WSAAService {
     this.certPath = path.resolve(__dirname, "../certs/", empresa.certificado);
     this.keyPath = path.resolve(__dirname, "../certs/", empresa.key);
 
-    console.log("Configuración de empresa establecida:");
-    console.log("CUIT:", this.cuit);
-    console.log("Certificado:", this.certPath);
-    console.log("Clave:", this.keyPath);
+    console.log(`Configuración de empresa establecida: CUIT=${this.cuit}`);
   }
 
+  // Modificar método para verificar token válido
+  isValidToken(service) {
+    // Verificar si tenemos un token para este CUIT y servicio
+    if (!this.cuit) return false;
+
+    if (!this.tokens[this.cuit]) {
+      this.tokens[this.cuit] = {};
+      return false;
+    }
+
+    if (!this.tokens[this.cuit][service]) return false;
+
+    const tokenData = this.tokens[this.cuit][service];
+    return this.isValidTokenData(tokenData);
+  }
+
+  // Método para guardar token
+  async saveToken(service, tokenData) {
+    try {
+      if (!this.cuit) throw new Error("No hay CUIT configurado");
+
+      // Guardar en memoria, organizado por CUIT
+      if (!this.tokens[this.cuit]) {
+        this.tokens[this.cuit] = {};
+      }
+      this.tokens[this.cuit][service] = tokenData;
+
+      // También guardar en archivo si es necesario
+      const fileName = `${this.cuit}_${service}_token.json`;
+      const filePath = path.join(this.tokenPath, fileName);
+
+      await fs.promises.mkdir(this.tokenPath, { recursive: true });
+      await fs.promises.writeFile(filePath, JSON.stringify(tokenData), "utf8");
+
+      console.log(
+        `Token guardado para CUIT ${this.cuit} y servicio ${service}`
+      );
+    } catch (error) {
+      console.error("Error al guardar token:", error);
+    }
+  }
+
+  // Método para cargar token
+  async loadToken(service) {
+    try {
+      if (!this.cuit) return null;
+
+      const fileName = `${this.cuit}_${service}_token.json`;
+      const filePath = path.join(this.tokenPath, fileName);
+
+      if (!fs.existsSync(filePath)) {
+        return null;
+      }
+
+      const data = await fs.promises.readFile(filePath, "utf8");
+      const tokenData = JSON.parse(data);
+
+      console.log(`Token cargado para CUIT ${this.cuit} y servicio ${service}`);
+      return tokenData;
+    } catch (error) {
+      console.error("Error al cargar token:", error);
+      return null;
+    }
+  }
+
+  // Método para autenticar
   async authenticate(service, empresa) {
     if (empresa) {
       this.setEmpresa(empresa);
@@ -44,24 +107,34 @@ class WSAAService {
     }
 
     try {
-      console.log(`Verificando token para ${service}...`);
+      console.log(
+        `Verificando token para CUIT=${this.cuit}, servicio=${service}`
+      );
 
       // Verificar si ya tenemos un token válido (tanto en memoria como en archivo)
       if (this.isValidToken(service)) {
         console.log(
-          `Token válido existente para ${service}, usando el token en memoria`
+          `Token válido existente para CUIT=${this.cuit}, servicio=${service}`
         );
         return {
-          token: this.tokens[service].token,
-          sign: this.tokens[service].sign,
+          token: this.tokens[this.cuit][service].token,
+          sign: this.tokens[this.cuit][service].sign,
         };
       }
 
       // Intentar cargar el token del almacenamiento
       const loadedToken = await this.loadToken(service);
       if (loadedToken && this.isValidTokenData(loadedToken)) {
-        console.log(`Token válido cargado del almacenamiento para ${service}`);
-        this.tokens[service] = loadedToken;
+        console.log(
+          `Token válido cargado del almacenamiento para CUIT=${this.cuit}, servicio=${service}`
+        );
+
+        // Asegurarse que el objeto de tokens para este CUIT existe
+        if (!this.tokens[this.cuit]) {
+          this.tokens[this.cuit] = {};
+        }
+
+        this.tokens[this.cuit][service] = loadedToken;
         return {
           token: loadedToken.token,
           sign: loadedToken.sign,
@@ -69,7 +142,9 @@ class WSAAService {
       }
 
       // Si llegamos aquí, necesitamos un nuevo token
-      console.log(`Generando nuevo token para ${service}...`);
+      console.log(
+        `Generando nuevo token para CUIT=${this.cuit}, servicio=${service}`
+      );
 
       // Generar y firmar TRA
       const traPath = this.generateTRA(service);
@@ -80,7 +155,6 @@ class WSAAService {
         const tokenData = await this.callWSAA(cms);
 
         // Guardar el token para uso futuro
-        this.tokens[service] = tokenData;
         await this.saveToken(service, tokenData);
 
         return {
@@ -102,7 +176,7 @@ class WSAAService {
           const recentToken = await this.findMostRecentToken(service);
           if (recentToken) {
             console.log("Se encontró un token reciente que podría ser válido");
-            this.tokens[service] = recentToken;
+            this.tokens[this.cuit][service] = recentToken;
             return {
               token: recentToken.token,
               sign: recentToken.sign,
@@ -115,7 +189,7 @@ class WSAAService {
           await new Promise((resolve) => setTimeout(resolve, 5000));
 
           // Limpiamos el token anterior por si acaso
-          delete this.tokens[service];
+          delete this.tokens[this.cuit][service];
 
           // Reintentar la autenticación
           return this.authenticate(service);
@@ -124,8 +198,8 @@ class WSAAService {
         throw error;
       }
     } catch (error) {
-      console.error("Error al autenticar con AFIP:", error);
-      throw new Error(`Error de autenticación AFIP: ${error.message}`);
+      console.error(`Error en autenticación para CUIT=${this.cuit}:`, error);
+      throw error;
     }
   }
 
@@ -248,17 +322,13 @@ class WSAAService {
     }
   }
 
-  isValidToken(service) {
-    if (!this.tokens[service]) return false;
-
-    const expiration = moment(this.tokens[service].expirationTime);
-    return moment().isBefore(expiration);
-  }
-
   // Método auxiliar para encontrar el token más reciente
   async findMostRecentToken(service) {
     try {
-      const tokenPath = path.resolve(this.tokenPath, `${service}.json`);
+      const tokenPath = path.resolve(
+        this.tokenPath,
+        `${this.cuit}_${service}_token.json`
+      );
       if (fs.existsSync(tokenPath)) {
         const tokenData = JSON.parse(fs.readFileSync(tokenPath, "utf8"));
         // Verificar si el token parece válido (tiene fecha de expiración en el futuro)
@@ -288,48 +358,6 @@ class WSAAService {
     }
 
     return new Date(tokenData.expirationTime) > new Date();
-  }
-
-  async loadToken(service) {
-    try {
-      const tokenPath = path.resolve(this.tokenPath, `${service}.json`);
-
-      // Verificar si existe el archivo
-      if (!fs.existsSync(tokenPath)) {
-        console.log(`No se encontró archivo de token para ${service}`);
-        return null;
-      }
-
-      // Leer el archivo
-      const data = fs.readFileSync(tokenPath, "utf8");
-      const tokenData = JSON.parse(data);
-
-      console.log(`Token cargado del archivo para ${service}`);
-      return tokenData;
-    } catch (error) {
-      console.error(`Error al cargar token para ${service}:`, error);
-      return null;
-    }
-  }
-
-  async saveToken(service, tokenData) {
-    try {
-      // Asegurarse que existe el directorio
-      if (!fs.existsSync(this.tokenPath)) {
-        fs.mkdirSync(this.tokenPath, { recursive: true });
-      }
-
-      const tokenPath = path.resolve(this.tokenPath, `${service}.json`);
-
-      // Guardar el token en un archivo
-      fs.writeFileSync(tokenPath, JSON.stringify(tokenData, null, 2));
-
-      console.log(`Token guardado en archivo para ${service}`);
-      return true;
-    } catch (error) {
-      console.error(`Error al guardar token para ${service}:`, error);
-      return false;
-    }
   }
 }
 

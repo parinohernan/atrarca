@@ -13,6 +13,9 @@ exports.getUltimoComprobante = async (req, res) => {
       });
     }
 
+    // Asegurarnos de que el token pertenezca a la empresa actual
+    console.log(`Consultando con CUIT: ${empresa.cuit}`);
+
     // Pasar la empresa al servicio
     const resultado = await afipService.consultarUltimoComprobante(
       parseInt(puntoVenta),
@@ -23,9 +26,12 @@ exports.getUltimoComprobante = async (req, res) => {
     res.json(resultado);
   } catch (error) {
     console.error("Error en controlador:", error);
+
+    // Mejorar respuesta de error para mostrar más detalles
     res.status(500).json({
       error: "Error al consultar AFIP",
       detalle: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };

@@ -9,11 +9,11 @@ const users = [
   {
     username: "empresa1",
     password: "empresa1",
-    name: "Empresa Uno SRL",
+    name: "JHP DEVELOPMENT",
     role: "user",
     empresa: {
       cuit: "20278280641",
-      razonSocial: "Empresa Uno SRL",
+      razonSocial: "JHP DEVELOPMENT SRL",
       certificado: "jhp.crt",
       key: "jhp.key",
     },
@@ -21,13 +21,25 @@ const users = [
   {
     username: "empresa2",
     password: "empresa2",
-    name: "Distribuidora Dos SA",
+    name: "deliverydeagua",
     role: "user",
     empresa: {
-      cuit: "20267565393",
-      razonSocial: "Distribuidora Dos SA",
-      certificado: "empresa2.crt",
-      key: "empresa2.key",
+      cuit: "27248910297",
+      razonSocial: "deliverydeagua",
+      certificado: "agua.crt",
+      key: "agua.key",
+    },
+  },
+  {
+    username: "empresa3",
+    password: "empresa3",
+    name: "SAAS SRL",
+    role: "user",
+    empresa: {
+      cuit: "33708222629",
+      razonSocial: "SAAS SRL",
+      certificado: "saa.crt",
+      key: "saa.key",
     },
   },
 ];

@@ -146,8 +146,8 @@
           })
           .then(response => {
             if (response.ok) {
-              // Si el token es válido, redirigir al dashboard
-              window.location.href = '/dashboard';
+              // Si el token es válido, redirigir al index
+              window.location.href = '/';
             } else {
               // Si el token no es válido, limpiar localStorage
               localStorage.removeItem('token');
@@ -164,45 +164,50 @@
         const loginForm = document.getElementById('loginForm');
         const errorMessage = document.getElementById('errorMessage');
         
-        loginForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          
-          // Ocultar mensaje de error anterior
-          errorMessage.classList.add('hidden');
-          errorMessage.textContent = '';
-          
-          const username = document.getElementById('username').value;
-          const password = document.getElementById('password').value;
-          
-          try {
-            const response = await fetch(`${API_URL}/auth/login`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ username, password })
-            });
+        // Verificar que los elementos existan antes de usarlos
+        if (loginForm && errorMessage) {
+          loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             
-            const data = await response.json();
+            // Ocultar mensaje de error anterior
+            errorMessage.classList.add('hidden');
+            errorMessage.textContent = '';
             
-            if (response.ok && data.success) {
-              // Guardar token y datos del usuario
-              localStorage.setItem('token', data.token);
-              localStorage.setItem('user', JSON.stringify(data.user));
+            const username = (document.getElementById('username') as HTMLInputElement)?.value || '';
+            const password = (document.getElementById('password') as HTMLInputElement)?.value || '';
+            
+            try {
+              const response = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+              });
               
-              // Redirigir al index
-              window.location.href = '/';
-            } else {
-              // Mostrar mensaje de error
-              errorMessage.textContent = data.error || 'Error al iniciar sesión';
+              const data = await response.json();
+              
+              if (response.ok && data.success) {
+                // Guardar token y datos del usuario
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                // Redirigir al index
+                window.location.href = '/';
+              } else {
+                // Mostrar mensaje de error
+                errorMessage.textContent = data.error || 'Error al iniciar sesión';
+                errorMessage.classList.remove('hidden');
+              }
+            } catch (error) {
+              console.error('Error:', error);
+              errorMessage.textContent = 'Error al conectar con el servidor';
               errorMessage.classList.remove('hidden');
             }
-          } catch (error) {
-            console.error('Error:', error);
-            errorMessage.textContent = 'Error al conectar con el servidor';
-            errorMessage.classList.remove('hidden');
-          }
-        });
+          });
+        } else {
+          console.error('No se encontraron elementos del formulario necesarios');
+        }
       });
     </script>
   </body>

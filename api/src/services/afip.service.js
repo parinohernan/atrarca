@@ -101,6 +101,12 @@ class AfipService {
         });
       });
 
+      // Agregar esto para depuración
+      console.log(
+        "Estructura de respuesta AFIP:",
+        JSON.stringify(resultado, null, 2)
+      );
+
       // Verificar si hay errores en la respuesta
       if (resultado.FECompUltimoAutorizadoResult.Errors) {
         const errors = this.formatearErrores(
@@ -609,6 +615,29 @@ class AfipService {
     } catch (error) {
       console.error("Error al consultar cotización:", error);
       throw new Error(`Error al consultar cotización: ${error.message}`);
+    }
+  }
+
+  // Método para formatear errores de AFIP en un mensaje legible
+  formatearErrores(errors) {
+    try {
+      if (!errors) return "Error desconocido";
+
+      // Si es un arreglo de errores
+      if (Array.isArray(errors.Err)) {
+        return errors.Err.map((e) => `Código ${e.Code}: ${e.Msg}`).join(". ");
+      }
+
+      // Si es un solo error
+      if (errors.Err) {
+        return `Código ${errors.Err.Code}: ${errors.Err.Msg}`;
+      }
+
+      // Si tiene una estructura diferente
+      return JSON.stringify(errors);
+    } catch (error) {
+      console.error("Error al formatear errores:", error);
+      return "Error al procesar la respuesta de AFIP";
     }
   }
 }
