@@ -205,6 +205,10 @@ exports.grabarCAE = async (req, res) => {
         empresa
       );
 
+      console.log("Respuesta AFIP completa:", resultadoAFIP);
+      console.log("CAE obtenido:", resultadoAFIP.cae);
+      console.log("Fecha vencimiento:", resultadoAFIP.fechaVencimiento);
+
       if (!resultadoAFIP.success) {
         return res.status(400).json({
           error: "Error al obtener CAE de AFIP",
@@ -212,10 +216,10 @@ exports.grabarCAE = async (req, res) => {
         });
       }
 
-      // Actualizar la factura con el CAE
+      // Actualizar la factura con el CAE y su fecha de vencimiento
       const updateQuery = `
-        UPDATE DocumentoVenta 
-        SET CAE = ?, CAEVencimiento = ?
+        UPDATE facturaCabeza 
+        SET afip_cae = ?, afip_cae_vencimiento = ?
         WHERE DocumentoTipo = ? 
           AND DocumentoSucursal = ? 
           AND DocumentoNumero = ?

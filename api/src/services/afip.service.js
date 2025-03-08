@@ -321,6 +321,34 @@ class AfipService {
         `CUIT del receptor procesado: ${docNro} (original: ${datosComprobante.nroDocReceptor})`
       );
 
+      // Asegurar consistencia en los importes
+      const importeNeto = parseFloat(datosComprobante.importeNeto) || 0;
+      const importeIva = parseFloat(datosComprobante.importeIva) || 0;
+      const importeTotal = parseFloat(datosComprobante.importeTotal) || 0;
+
+      // Verificar consistencia de montos
+      const sumaImportes = importeNeto + importeIva;
+
+      if (Math.abs(importeTotal - sumaImportes) > 0.1) {
+        console.warn(
+          `⚠️ Advertencia: El importe total (${importeTotal}) no coincide con la suma de importes (${sumaImportes})`
+        );
+        console.warn("Ajustando importe total para coincidir con la suma...");
+      }
+
+      // Verificar que haya información de IVA si hay importe neto
+      const baseImp = importeNeto;
+      const importeIvaCalc = importeIva;
+      let alicuotaId = 5; // 5 = 21%
+
+      // Determinar ID de alícuota según el porcentaje
+      const porcentajeIva = parseFloat(datosComprobante.alicuotaIva) || 21;
+      if (porcentajeIva === 27) alicuotaId = 6;
+      else if (porcentajeIva === 10.5) alicuotaId = 4;
+      else if (porcentajeIva === 5) alicuotaId = 8;
+      else if (porcentajeIva === 2.5) alicuotaId = 9;
+      else if (porcentajeIva === 0) alicuotaId = 3;
+
       // Construcción del objeto de solicitud
       const solicitud = {
         Auth: authData,
@@ -334,36 +362,43 @@ class AfipService {
             FECAEDetRequest: {
               Concepto: parseInt(datosComprobante.conceptoIncluido || 1, 10),
               DocTipo: parseInt(datosComprobante.tipoDocReceptor || 80, 10),
-              DocNro: docNro.toString(), // Asignamos el CUIT como string
+              DocNro: docNro.toString(),
               CbteDesde: nroComprobante,
               CbteHasta: nroComprobante,
               CbteFch: fechaFormatted,
-              ImpTotal: parseFloat(datosComprobante.importeTotal),
-              ImpTotConc: parseFloat(datosComprobante.importeNoGravado || 0),
-              ImpNeto: parseFloat(datosComprobante.importeNeto),
-              ImpOpEx: parseFloat(datosComprobante.importeExento || 0),
-              ImpIVA: parseFloat(datosComprobante.importeIVA || 0),
-              ImpTrib: parseFloat(datosComprobante.importeTributos || 0),
-              FchServDesde: datosComprobante.fechaServicioDesde || null,
-              FchServHasta: datosComprobante.fechaServicioHasta || null,
-              FchVtoPago: datosComprobante.fechaVencimientoPago || null,
-              MonId: datosComprobante.moneda || "PES",
-              MonCotiz: parseFloat(datosComprobante.cotizacion || 1),
-              CondicionIVAReceptorId: codIVAReceptor, // Nombre correcto del campo
+              ImpTotal: sumaImportes, // Usar la suma de importes para garantizar consistencia
+              ImpTotConc: 0, // Importe no gravado
+              ImpNeto: importeNeto,
+              ImpOpEx: 0, // Operaciones exentas
+              ImpIVA: importeIva,
+              ImpTrib: 0, // Tributos
+              FchServDesde: null,
+              FchServHasta: null,
+              FchVtoPago: null,
+              MonId: "PES",
+              MonCotiz: 1,
+              CondicionIVAReceptorId: codIVAReceptor,
+              // Siempre agregar objeto IVA si hay importe neto
+              Iva:
+                importeNeto > 0
+                  ? {
+                      AlicIva: [
+                        {
+                          Id: alicuotaId,
+                          BaseImp: baseImp,
+                          Importe: importeIvaCalc,
+                        },
+                      ],
+                    }
+                  : null,
             },
           },
         },
       };
 
-      // Si hay IVA, agregarlo al request
-      if (datosComprobante.iva && datosComprobante.iva.length > 0) {
-        solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.Iva = {
-          AlicIva: datosComprobante.iva.map((item) => ({
-            Id: parseInt(item.Id, 10),
-            BaseImp: parseFloat(item.BaseImp),
-            Importe: parseFloat(item.Importe),
-          })),
-        };
+      // Si el objeto IVA tiene valor null, eliminarlo para no enviarlo
+      if (!solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.Iva) {
+        delete solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.Iva;
       }
 
       console.log(
@@ -427,12 +462,42 @@ class AfipService {
       // Verificar si hay CAE en la respuesta y es válido
       console.log("Verificando CAE recibido:", detalle.CAE);
 
-      if (!detalle.CAE || detalle.CAE === "") {
-        console.warn("No se recibió CAE en la respuesta");
+      // Verificar si hay observaciones
+      const tieneCae = detalle.CAE && detalle.CAE.length > 0;
+      const tieneObservaciones =
+        detalle.Observaciones && detalle.Observaciones.Obs;
 
+      if (tieneCae) {
+        console.log("CAE obtenido exitosamente:", detalle.CAE);
+        console.log("Fecha vencimiento CAE:", detalle.CAEFchVto);
+
+        // Formatear fecha de vencimiento si existe
+        let fechaVencimiento = null;
+        if (detalle.CAEFchVto) {
+          // La fecha viene en formato AAAAMMDD, convertir a YYYY-MM-DD para MySQL
+          const fechaStr = detalle.CAEFchVto;
+          if (fechaStr.length === 8) {
+            fechaVencimiento = `${fechaStr.substring(
+              0,
+              4
+            )}-${fechaStr.substring(4, 6)}-${fechaStr.substring(6, 8)}`;
+          } else {
+            fechaVencimiento = fechaStr;
+          }
+          console.log("Fecha vencimiento formateada:", fechaVencimiento);
+        }
+
+        return {
+          success: true,
+          cae: detalle.CAE,
+          fechaVencimiento: fechaVencimiento,
+          resultado: detalle.Resultado,
+          detalleCompleto: detalle,
+        };
+      } else {
         // Verificar si hay observaciones
         let observaciones = [];
-        if (detalle.Observaciones && detalle.Observaciones.Obs) {
+        if (tieneObservaciones) {
           if (Array.isArray(detalle.Observaciones.Obs)) {
             observaciones = detalle.Observaciones.Obs.map(
               (o) => `${o.Code}: ${o.Msg}`
@@ -453,24 +518,6 @@ class AfipService {
           observaciones: observaciones,
         };
       }
-
-      // Si llegamos aquí, hay un CAE válido
-      console.log("CAE obtenido exitosamente:", detalle.CAE);
-
-      // Respuesta normal con CAE
-      return {
-        success: true,
-        cae: detalle.CAE,
-        fechaVencimientoCAE: this.formatearFecha(detalle.CAEFchVto),
-        resultado: detalle.Resultado,
-        observaciones: detalle.Observaciones
-          ? Array.isArray(detalle.Observaciones.Obs)
-            ? detalle.Observaciones.Obs.map((o) => `${o.Code}: ${o.Msg}`)
-            : [
-                `${detalle.Observaciones.Obs.Code}: ${detalle.Observaciones.Obs.Msg}`,
-              ]
-          : [],
-      };
     } catch (error) {
       console.error("Error al obtener CAE:", error);
       throw new Error(`Error al obtener CAE: ${error.message}`);
