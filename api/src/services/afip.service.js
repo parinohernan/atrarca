@@ -349,6 +349,21 @@ class AfipService {
       else if (porcentajeIva === 2.5) alicuotaId = 9;
       else if (porcentajeIva === 0) alicuotaId = 3;
 
+      // Agregar comprobantes asociados para notas de crédito
+      let comprobantesAsociados = null;
+      if (
+        datosComprobante.comprobantesAsociados &&
+        datosComprobante.comprobantesAsociados.length > 0
+      ) {
+        comprobantesAsociados = {
+          CbteAsoc: datosComprobante.comprobantesAsociados.map((c) => ({
+            Tipo: c.Tipo,
+            PtoVta: c.PtoVta,
+            Nro: c.Nro,
+          })),
+        };
+      }
+
       // Construcción del objeto de solicitud
       const solicitud = {
         Auth: authData,
@@ -391,6 +406,10 @@ class AfipService {
                       ],
                     }
                   : null,
+              // Añadir comprobantes asociados si existen (para notas de crédito)
+              ...(comprobantesAsociados
+                ? { CbtesAsoc: comprobantesAsociados }
+                : {}),
             },
           },
         },
