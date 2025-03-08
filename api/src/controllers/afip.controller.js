@@ -3,6 +3,14 @@ const afipService = require("../services/afip.service");
 exports.getUltimoComprobante = async (req, res) => {
   console.log("getUltimoComprobante", req.query);
   try {
+    // Verificar explícitamente si existe req.user
+    if (!req.user) {
+      return res.status(401).json({
+        error: "No autenticado o sesión expirada",
+        detalle: "Debe iniciar sesión nuevamente",
+      });
+    }
+
     const { puntoVenta, tipoComprobante } = req.query;
 
     // Usar la empresa del usuario autenticado

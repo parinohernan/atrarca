@@ -10,9 +10,11 @@ console.log("AFIP_CUIT:", process.env.AFIP_CUIT);
 
 const express = require("express");
 const cors = require("cors");
-const afipRoutes = require("./routes/afip.routes");
-const authRoutes = require("./routes/auth.routes");
-const { authenticateToken } = require("./middleware/auth.middleware");
+const routes = require("./routes");
+const dotenv = require("dotenv");
+
+// Cargar variables de entorno
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3301;
@@ -21,18 +23,18 @@ const PORT = process.env.PORT || 3301;
 app.use(cors());
 app.use(express.json());
 
-// Rutas públicas (sin autenticación)
-app.use("/api/auth", authRoutes);
+// Rutas
+app.use("/api", routes);
 
-// Rutas protegidas (requieren autenticación)
-app.use("/api/afip", authenticateToken, afipRoutes);
-
-// Ruta base
+// Ruta básica para verificar que el servidor está funcionando
 app.get("/", (req, res) => {
-  res.send("API de AFIP funcionando correctamente");
+  res.send("API de AFIP funcionando");
 });
 
 // Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`Servidor ejecutándose en puerto ${PORT}`);
+  console.log(`Servidor API ejecutándose en puerto ${PORT}`);
+  console.log(`Modo: ${process.env.AFIP_MODE || "testing"}`);
 });
+
+module.exports = app;

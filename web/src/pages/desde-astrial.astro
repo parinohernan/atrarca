@@ -1,0 +1,428 @@
+---
+// Lógica del servidor
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Facturas ASTRIAL - AFIP</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5f5;
+      }
+      header {
+        background-color: #00395d;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+      }
+      nav {
+        background-color: #00395d;
+        border-color: #c1ced6;
+        border-width: 1px;
+        padding: 0.5rem;
+        text-align: center;
+      }
+      nav a {
+        color: rgba(172, 166, 201, 0.952);
+        text-decoration: none;
+        margin: 0 1rem;
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px;
+      }
+      nav a:hover {
+        background-color: rgba(54, 147, 190, 0.66);
+      }
+      main {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 1rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .form-group {
+        margin-bottom: 1rem;
+      }
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+      }
+      input, select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #0056b3;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #003d7a;
+      }
+      .filter-controls {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .filter-controls .form-group {
+        flex: 1;
+      }
+      .hidden {
+        display: none;
+      }
+      .facturas-container {
+        margin-top: 2rem;
+      }
+      .facturas-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+      .facturas-table th, .facturas-table td {
+        padding: 0.5rem;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      .facturas-table th {
+        background-color: #f0f0f0;
+      }
+      .facturas-table tr:hover {
+        background-color: #f5f5f5;
+      }
+      .action-btn {
+        margin-right: 0.5rem;
+      }
+      .success-message {
+        color: green;
+        padding: 0.5rem;
+        background-color: #e8f5e9;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+      }
+      .error-message {
+        color: #721c24;
+        padding: 0.5rem;
+        background-color: #f8d7da;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+      }
+      .user-name {
+        color: white;
+        margin-right: 10px;
+      }
+      .logout-btn {
+        background-color: #be4b49;
+        border: none;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 5px;
+      }
+      .status-pending {
+        background-color: #ffc107;
+      }
+      .status-success {
+        background-color: #28a745;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>Sistema de Gestión AFIP</h1>
+    </header>
+
+    <nav>
+      <a href="/">Inicio</a>
+      <a href="/solicitar-cae">Solicitar CAE</a>
+      <a href="/desde-astrial">Desde ASTRIAL</a>
+      <span id="userName" class="user-name"></span>
+      <button id="logoutBtn" class="logout-btn hidden">Cerrar sesión</button>
+    </nav>
+
+    <main>
+      <h2>Facturas sin CAE desde ASTRIAL</h2>
+      
+      <div id="errorDiv" class="error-message hidden"></div>
+      <div id="successDiv" class="success-message hidden"></div>
+      
+      <div class="filter-controls">
+        <div class="form-group">
+          <label for="puntoVenta">Punto de Venta</label>
+          <select id="puntoVenta">
+            <option value="">Todos</option>
+            <option value="0001">0001</option>
+            <option value="0002">0002</option>
+            <option value="0003">0003</option>
+            <option value="0004">0004</option>
+            <option value="0005">0005</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="tipoComprobante">Tipo de Comprobante</label>
+          <select id="tipoComprobante">
+            <option value="">Todos</option>
+            <option value="FCA">Factura A</option>
+            <option value="FCB">Factura B</option>
+            <option value="NCA">Nota de Crédito A</option>
+            <option value="NCB">Nota de Crédito B</option>
+          </select>
+        </div>
+        
+        <div class="form-group" style="align-self: flex-end;">
+          <button id="buscarBtn">Buscar Facturas</button>
+        </div>
+      </div>
+      
+      <div id="facturasContainer" class="facturas-container hidden">
+        <h3>Facturas sin CAE</h3>
+        <p id="facturaCount">Se encontraron 0 facturas sin CAE</p>
+        
+        <table id="facturasTable" class="facturas-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Punto de Venta</th>
+              <th>Número</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>Importe Neto</th>
+              <th>IVA</th>
+              <th>Total</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="facturasBody">
+            <!-- Aquí se cargarán las facturas dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <script>
+      // Asegúrate de que esta es la URL base correcta
+      const API_URL = 'http://localhost:3301/api';
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        // Verificar si hay un usuario conectado
+        const userStr = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
+        
+        if (!userStr || !token) {
+          window.location.href = '/login';
+          return;
+        }
+        
+        // Mostrar nombre de usuario
+        const user = JSON.parse(userStr);
+        const userName = document.getElementById('userName');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        userName.textContent = `Usuario: ${user.name}`;
+        logoutBtn.classList.remove('hidden');
+        
+        // Agregar funcionalidad al botón de logout
+        logoutBtn.addEventListener('click', () => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        });
+        
+        // Referencias a elementos DOM
+        const buscarBtn = document.getElementById('buscarBtn');
+        const puntoVentaSelect = document.getElementById('puntoVenta');
+        const tipoComprobanteSelect = document.getElementById('tipoComprobante');
+        const facturasContainer = document.getElementById('facturasContainer');
+        const facturasBody = document.getElementById('facturasBody');
+        const facturaCount = document.getElementById('facturaCount');
+        const errorDiv = document.getElementById('errorDiv');
+        const successDiv = document.getElementById('successDiv');
+        
+        // Función para formatear número como moneda
+        const formatCurrency = (value) => {
+          return new Intl.NumberFormat('es-AR', {
+            style: 'currency',
+            currency: 'ARS'
+          }).format(value);
+        };
+        
+        // Función para formatear fecha
+        const formatDate = (dateStr) => {
+          if (!dateStr) return '';
+          const date = new Date(dateStr);
+          return date.toLocaleDateString('es-AR');
+        };
+        
+        // Función para solicitar CAE y actualizar la factura
+        const solicitarCAE = async (tipo, puntoVenta, numero) => {
+          try {
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+            
+            const response = await fetch(`${API_URL}/astrial/grabar-cae`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                tipo,
+                puntoVenta,
+                numero,
+                solicitarCAE: true
+              })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+              successDiv.textContent = `Se ha obtenido y grabado el CAE ${data.cae} para la factura ${tipo}-${puntoVenta}-${numero}`;
+              successDiv.classList.remove('hidden');
+              
+              // Actualizar la tabla (removiendo la fila)
+              const facturaRow = document.getElementById(`factura-${tipo}-${puntoVenta}-${numero}`);
+              if (facturaRow) {
+                facturaRow.remove();
+                
+                // Actualizar contador
+                const countText = facturaCount.textContent;
+                const count = parseInt(countText.match(/\d+/)[0]) - 1;
+                facturaCount.textContent = `Se encontraron ${count} facturas sin CAE`;
+                
+                // Si no quedan facturas, ocultar la tabla
+                if (count === 0) {
+                  facturasContainer.classList.add('hidden');
+                }
+              }
+            } else {
+              errorDiv.textContent = data.error || 'Error al solicitar CAE';
+              errorDiv.classList.remove('hidden');
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            errorDiv.textContent = 'Error al comunicarse con el servidor';
+            errorDiv.classList.remove('hidden');
+          }
+        };
+        
+        // Función para buscar facturas
+        buscarBtn.addEventListener('click', async () => {
+          try {
+            const puntoVenta = puntoVentaSelect.value;
+            const tipoComprobante = tipoComprobanteSelect.value;
+            
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+            
+            // Construir URL con filtros
+            let url = `${API_URL}/astrial/facturas-sin-cae`;
+            const params = new URLSearchParams();
+            
+            if (puntoVenta) params.append('puntoVenta', puntoVenta);
+            if (tipoComprobante) params.append('tipo', tipoComprobante);
+            
+            if (params.toString()) {
+              url += `?${params.toString()}`;
+            }
+            
+            const response = await fetch(url, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+              // Limpiar tabla
+              facturasBody.innerHTML = '';
+              
+              if (data.facturas && data.facturas.length > 0) {
+                // Ordenar por número de comprobante
+                data.facturas.sort((a, b) => {
+                  if (a.tipo !== b.tipo) return a.tipo.localeCompare(b.tipo);
+                  if (a.puntoVenta !== b.puntoVenta) return a.puntoVenta.localeCompare(b.puntoVenta);
+                  return a.numero.localeCompare(b.numero);
+                });
+                
+                // Actualizar contador
+                facturaCount.textContent = `Se encontraron ${data.facturas.length} facturas sin CAE`;
+                
+                // Generar filas de la tabla
+                data.facturas.forEach(factura => {
+                  const tr = document.createElement('tr');
+                  tr.id = `factura-${factura.tipo}-${factura.puntoVenta}-${factura.numero}`;
+                  
+                  tr.innerHTML = `
+                    <td>${factura.tipo}</td>
+                    <td>${factura.puntoVenta}</td>
+                    <td>${factura.numero}</td>
+                    <td>${formatDate(factura.fecha)}</td>
+                    <td>${factura.cliente || '-'}</td>
+                    <td>${formatCurrency(factura.importeNeto)}</td>
+                    <td>${formatCurrency(factura.importeIva)}</td>
+                    <td>${formatCurrency(factura.total)}</td>
+                    <td>
+                      <button class="action-btn solicitar-cae-btn" data-tipo="${factura.tipo}" data-punto-venta="${factura.puntoVenta}" data-numero="${factura.numero}">
+                        Solicitar CAE
+                      </button>
+                    </td>
+                  `;
+                  
+                  facturasBody.appendChild(tr);
+                });
+                
+                // Agregar eventos a los botones
+                document.querySelectorAll('.solicitar-cae-btn').forEach(btn => {
+                  btn.addEventListener('click', (e) => {
+                    const tipo = e.target.dataset.tipo;
+                    const puntoVenta = e.target.dataset.puntoVenta;
+                    const numero = e.target.dataset.numero;
+                    
+                    solicitarCAE(tipo, puntoVenta, numero);
+                  });
+                });
+                
+                // Mostrar tabla
+                facturasContainer.classList.remove('hidden');
+              } else {
+                facturaCount.textContent = 'No se encontraron facturas sin CAE';
+                facturasContainer.classList.remove('hidden');
+              }
+            } else {
+              errorDiv.textContent = data.error || 'Error al buscar facturas';
+              errorDiv.classList.remove('hidden');
+              facturasContainer.classList.add('hidden');
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            errorDiv.textContent = 'Error al comunicarse con el servidor';
+            errorDiv.classList.remove('hidden');
+            facturasContainer.classList.add('hidden');
+          }
+        });
+      });
+    </script>
+  </body>
+</html> 

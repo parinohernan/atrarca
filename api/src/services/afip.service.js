@@ -235,91 +235,14 @@ class AfipService {
         datosComprobante.fecha = datosComprobante.fecha.replace(/-/g, "");
       }
 
-      // Primera consulta explícita para obtener el último comprobante autorizado
+      // PASO 1: La parte de la consulta explícita ya está comentada
+
       console.log(
-        "PASO 1: Consultando explícitamente el último comprobante autorizado..."
+        `NÚMERO DE COMPROBANTE DEFINITIVO: ${datosComprobante.numero}`
       );
-      try {
-        // Preparar parámetros
-        const paramsConsulta = {
-          Auth: authData,
-          PtoVta: parseInt(datosComprobante.puntoVenta, 10),
-          CbteTipo: parseInt(datosComprobante.tipoComprobante, 10),
-        };
 
-        console.log("Parámetros de consulta:", JSON.stringify(paramsConsulta));
-
-        // Ejecutar consulta directamente
-        const resultadoConsulta = await new Promise((resolve, reject) => {
-          client.FECompUltimoAutorizado(paramsConsulta, function (err, result) {
-            if (err) {
-              console.error("Error en llamada a FECompUltimoAutorizado:", err);
-              return reject(err);
-            }
-            if (!result) {
-              console.error("Respuesta vacía de AFIP");
-              return reject(new Error("Respuesta vacía de AFIP"));
-            }
-            resolve(result);
-          });
-        });
-
-        console.log(
-          "RESPUESTA DE ÚLTIMO COMPROBANTE:",
-          JSON.stringify(resultadoConsulta)
-        );
-
-        // Determinar el número a usar
-        let ultimoNumero;
-        let siguienteNumero;
-
-        if (
-          resultadoConsulta.FECompUltimoAutorizadoResult &&
-          resultadoConsulta.FECompUltimoAutorizadoResult.CbteNro !== undefined
-        ) {
-          ultimoNumero = resultadoConsulta.FECompUltimoAutorizadoResult.CbteNro;
-          siguienteNumero = ultimoNumero + 1;
-          console.log(
-            `Último comprobante según AFIP: ${ultimoNumero}, Siguiente: ${siguienteNumero}`
-          );
-        } else if (
-          resultadoConsulta.FECompUltimoAutorizadoResult &&
-          resultadoConsulta.FECompUltimoAutorizadoResult.Errors
-        ) {
-          // Si hay errores, es posible que sea porque no hay comprobantes previos
-          const errors = Array.isArray(
-            resultadoConsulta.FECompUltimoAutorizadoResult.Errors.Err
-          )
-            ? resultadoConsulta.FECompUltimoAutorizadoResult.Errors.Err
-            : [resultadoConsulta.FECompUltimoAutorizadoResult.Errors.Err];
-
-          // Código 1502 indica que no hay comprobantes previos
-          if (errors.some((e) => e.Code === 1502)) {
-            console.log(
-              "AFIP informa que no hay comprobantes previos. Se usará número 1."
-            );
-            ultimoNumero = 0;
-            siguienteNumero = 1;
-          } else {
-            // Otro tipo de error
-            const errorMsg = errors
-              .map((e) => `${e.Code}: ${e.Msg}`)
-              .join("; ");
-            throw new Error(
-              `Errores al consultar último comprobante: ${errorMsg}`
-            );
-          }
-        } else {
-          throw new Error(
-            "Formato de respuesta inesperado al consultar último comprobante"
-          );
-        }
-
-        // Establecer el número de comprobante correcto
-        datosComprobante.numero = siguienteNumero;
-        console.log(
-          `NÚMERO DE COMPROBANTE DEFINITIVO: ${datosComprobante.numero}`
-        );
+      // Comentando el manejo automático de error para número de comprobante
+      /*
       } catch (error) {
         console.error("Error al consultar último comprobante:", error);
 
@@ -339,6 +262,7 @@ class AfipService {
           );
         }
       }
+      */
 
       // Verificar el tipo de comprobante y establecer condición IVA adecuada
       const tipoComprobante = parseInt(datosComprobante.tipoComprobante, 10);

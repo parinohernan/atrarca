@@ -125,9 +125,11 @@
         <button id="logoutBtn" class="hidden">Cerrar Sesión</button>
       </div>
       <nav>
-        <a href="/">Consulta de Comprobantes</a>
+        <a href="/">Inicio</a>
         <a href="/solicitar-cae">Solicitar CAE</a>
-        <a href="/login">Login</a>
+        <a href="/desde-astrial">Desde ASTRIAL</a>
+        <span id="userName" class="user-name"></span>
+        <button id="logoutBtn" class="logout-btn hidden">Cerrar sesión</button>
       </nav>
     </header>
     
@@ -178,7 +180,7 @@
 
     <script>
       // URL de la API
-      const API_URL = 'http://localhost:3301/api/afip';
+      const API_URL = 'http://localhost:3301/api';
       
       document.addEventListener('DOMContentLoaded', () => {
         // Obtener elementos
@@ -211,11 +213,10 @@
           try {
             // Llamada a la API
             const token = localStorage.getItem('token');
-            const headers = token ? 
-              { 'Authorization': `Bearer ${token}` } : {};
-            
-            const response = await fetch(`${API_URL}/ultimo-comprobante?puntoVenta=${puntoVenta}&tipoComprobante=${tipoComprobante}`, {
-              headers: headers
+            const response = await fetch(`${API_URL}/afip/ultimo-comprobante?puntoVenta=${puntoVenta}&tipoComprobante=${tipoComprobante}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
             });
             
             if (response.status === 401 || response.status === 403) {
