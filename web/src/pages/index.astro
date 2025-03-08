@@ -201,8 +201,9 @@
         consultaForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           
-          const puntoVenta = document.getElementById('puntoVenta').value;
-          const tipoComprobante = document.getElementById('tipoComprobante').value;
+          // Obtener valores con casting de tipo para evitar errores TypeScript
+          const puntoVenta = (document.getElementById('puntoVenta') as HTMLSelectElement).value;
+          const tipoComprobante = (document.getElementById('tipoComprobante') as HTMLSelectElement).value;
           
           if (!puntoVenta || !tipoComprobante) {
             errorDiv.textContent = 'Debe seleccionar punto de venta y tipo de comprobante.';

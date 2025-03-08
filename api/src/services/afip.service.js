@@ -297,6 +297,13 @@ class AfipService {
         `Usando código IVA receptor: ${codIVAReceptor} (tipo number: ${typeof codIVAReceptor})`
       );
 
+      const nroComprobante = parseInt(datosComprobante.numero, 10);
+      if (isNaN(nroComprobante)) {
+        throw new Error(
+          `Número de comprobante inválido: ${datosComprobante.numero}`
+        );
+      }
+
       // Construcción del objeto de solicitud
       const solicitud = {
         Auth: authData,
@@ -311,8 +318,8 @@ class AfipService {
               Concepto: parseInt(datosComprobante.concepto || 1, 10),
               DocTipo: parseInt(datosComprobante.docTipo || 80, 10),
               DocNro: datosComprobante.docNro,
-              CbteDesde: parseInt(datosComprobante.numero, 10),
-              CbteHasta: parseInt(datosComprobante.numero, 10),
+              CbteDesde: nroComprobante,
+              CbteHasta: nroComprobante,
               CbteFch: datosComprobante.fecha,
               ImpTotal: parseFloat(datosComprobante.importeTotal),
               ImpTotConc: parseFloat(datosComprobante.importeNoGravado || 0),

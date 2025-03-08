@@ -92,7 +92,7 @@ exports.getFacturasSinCAE = async (req, res) => {
   }
 };
 
-// Grabar CAE en una factura
+// Grabar CAE en factura Astrial
 exports.grabarCAE = async (req, res) => {
   try {
     // Verificar que el usuario tenga una empresa asociada
@@ -103,154 +103,146 @@ exports.grabarCAE = async (req, res) => {
       });
     }
 
-    // Obtener datos del cuerpo de la solicitud
-    const { tipo, puntoVenta, numero, cae, fechaVencimiento, solicitarCAE } =
-      req.body;
+    const { tipo, puntoVenta, numero, solicitarCAE } = req.body;
 
-    // Validar datos obligatorios
+    // Validar que todos los campos requeridos estén presentes
     if (!tipo || !puntoVenta || !numero) {
       return res.status(400).json({
-        error: "Debe proporcionar tipo, punto de venta y número de factura",
+        error: "Faltan parámetros requeridos (tipo, puntoVenta, numero)",
       });
     }
 
-    // Si solicitarCAE es true, primero solicitamos el CAE a AFIP
-    let caeData = null;
-    if (solicitarCAE) {
-      try {
-        // Obtener los datos de la factura de la base de datos
-        const queryDatosFactura = `
-          SELECT 
-            DocumentoTipo, 
-            DocumentoSucursal, 
-            DocumentoNumero, 
-            Fecha, 
-            ClienteCodigo, 
-            ImporteNeto,
-            ImporteIva1,
-            ImporteTotal,
-            PorcentajeIva1
-          FROM facturacabeza 
-          WHERE DocumentoTipo = ? AND DocumentoSucursal = ? AND DocumentoNumero = ?
-        `;
+    // Validar que los valores numéricos sean realmente números válidos
+    const puntoVentaNum = parseInt(puntoVenta, 10);
+    const numeroFactura = parseInt(numero, 10);
 
-        const facturas = await dbService.query(empresa, queryDatosFactura, [
-          tipo,
-          puntoVenta,
-          numero,
-        ]);
-
-        if (facturas.length === 0) {
-          return res.status(404).json({
-            error: "Factura no encontrada",
-          });
-        }
-
-        const factura = facturas[0];
-
-        // Preparar datos para solicitar CAE
-        const datosComprobante = {
-          puntoVenta: puntoVenta,
-          tipoComprobante: tipoComprobanteMap[tipo] || "1", // Default a Factura A si no se encuentra
-          concepto: "1", // Productos
-          docTipo: "80", // CUIT
-          docNro: req.body.docNro || "20000000001", // Cliente genérico si no se proporciona
-          importeNeto: parseFloat(factura.ImporteNeto),
-          importeIVA: parseFloat(factura.ImporteIva1),
-          importeTotal: parseFloat(factura.ImporteTotal),
-          fecha: factura.Fecha.toISOString().split("T")[0].replace(/-/g, ""),
-          alicuotaIVA: factura.PorcentajeIva1 === 21 ? "5" : "4", // 5 para 21%, 4 para 10.5%
-          iva: [
-            {
-              Id: factura.PorcentajeIva1 === 21 ? 5 : 4,
-              BaseImp: parseFloat(factura.ImporteNeto),
-              Importe: parseFloat(factura.ImporteIva1),
-            },
-          ],
-        };
-
-        // Solicitar CAE a AFIP
-        caeData = await afipService.obtenerCAE(datosComprobante, empresa);
-
-        if (!caeData.success) {
-          return res.status(400).json({
-            error: "Error al solicitar CAE a AFIP",
-            detalle: caeData.error,
-          });
-        }
-      } catch (error) {
-        return res.status(500).json({
-          error: "Error al solicitar CAE a AFIP",
-          detalle: error.message,
-        });
-      }
-    }
-
-    // Si llegamos aquí, o bien tenemos un CAE de AFIP o bien nos proporcionaron uno
-    const caeToSave = caeData ? caeData.cae : cae;
-    const fechaVencimientoToSave = caeData
-      ? caeData.fechaVencimientoCAE
-      : fechaVencimiento;
-
-    if (!caeToSave || !fechaVencimientoToSave) {
+    if (isNaN(puntoVentaNum) || isNaN(numeroFactura)) {
       return res.status(400).json({
-        error: "Debe proporcionar CAE y fecha de vencimiento",
+        error: "El punto de venta y número deben ser valores numéricos válidos",
+        detalles: {
+          puntoVenta: puntoVenta,
+          numero: numero,
+          puntoVentaParseado: puntoVentaNum,
+          numeroParseado: numeroFactura,
+        },
       });
     }
 
-    // Formatear fecha para MySQL (YYYY-MM-DD)
-    let fechaFormateada = fechaVencimientoToSave;
-    if (fechaVencimientoToSave.includes("/")) {
-      const parts = fechaVencimientoToSave.split("/");
-      fechaFormateada = `${parts[2]}-${parts[1]}-${parts[0]}`;
-    } else if (fechaVencimientoToSave.length === 8) {
-      // Formato AAAAMMDD
-      fechaFormateada = `${fechaVencimientoToSave.substr(
-        0,
-        4
-      )}-${fechaVencimientoToSave.substr(4, 2)}-${fechaVencimientoToSave.substr(
-        6,
-        2
-      )}`;
-    }
-
-    // Actualizar la factura en la base de datos
+    // Buscar la factura en la base de datos
     const query = `
-      UPDATE facturacabeza 
-      SET afip_cae = ?, afip_cae_vencimiento = ? 
-      WHERE DocumentoTipo = ? AND DocumentoSucursal = ? AND DocumentoNumero = ?
+      SELECT * FROM DocumentoVenta 
+      WHERE DocumentoTipo = ? 
+        AND DocumentoSucursal = ? 
+        AND DocumentoNumero = ?
+        AND Anulado = 0
     `;
 
-    const result = await dbService.query(empresa, query, [
-      caeToSave,
-      fechaFormateada,
+    // Ejecutar consulta
+    const facturas = await dbService.query(empresa, query, [
       tipo,
       puntoVenta,
       numero,
     ]);
 
-    if (result.affectedRows === 0) {
+    if (!facturas || facturas.length === 0) {
       return res.status(404).json({
-        error: "No se pudo actualizar la factura, posiblemente no existe",
+        error: "No se encontró la factura especificada",
       });
     }
 
-    res.json({
-      success: true,
-      message: "CAE grabado correctamente",
-      cae: caeToSave,
-      fechaVencimiento: fechaFormateada,
-      factura: {
+    const factura = facturas[0];
+
+    // Si se solicita CAE
+    if (solicitarCAE) {
+      // Preparar datos para solicitar CAE
+      const datosComprobante = {
+        tipoComprobante: mapearTipoComprobante(tipo),
+        puntoVenta: puntoVentaNum.toString(), // Asegurarse de que sea string para el servicio
+        numero: numeroFactura.toString(), // Asegurarse de que sea string para el servicio
+        fecha: factura.Fecha ? new Date(factura.Fecha) : new Date(),
+        importeTotal: parseFloat(factura.ImporteTotal) || 0,
+        importeNeto: parseFloat(factura.ImporteNeto) || 0,
+        importeIva: parseFloat(factura.ImporteIva1) || 0,
+        conceptoIncluido: 1, // 1 = Productos
+        tipoDocReceptor: 80, // 80 = CUIT
+        nroDocReceptor: factura.ClienteCuit
+          ? factura.ClienteCuit.replace(/\D/g, "")
+          : "20000000001",
+        alicuotaIva: parseFloat(factura.PorcentajeIva1) || 21,
+        condicionVenta: 1, // 1 = Contado
+      };
+
+      console.log("Datos comprobante preparados:", datosComprobante);
+
+      // Solicitar CAE a AFIP
+      const resultadoAFIP = await afipService.obtenerCAE(
+        datosComprobante,
+        empresa
+      );
+
+      if (!resultadoAFIP.success) {
+        return res.status(400).json({
+          error: "Error al obtener CAE de AFIP",
+          detalle: resultadoAFIP.error,
+        });
+      }
+
+      // Actualizar la factura con el CAE
+      const updateQuery = `
+        UPDATE DocumentoVenta 
+        SET CAE = ?, CAEVencimiento = ?
+        WHERE DocumentoTipo = ? 
+          AND DocumentoSucursal = ? 
+          AND DocumentoNumero = ?
+      `;
+
+      await dbService.query(empresa, updateQuery, [
+        resultadoAFIP.cae,
+        resultadoAFIP.fechaVencimiento,
         tipo,
         puntoVenta,
         numero,
+      ]);
+
+      return res.json({
+        success: true,
+        mensaje: "CAE obtenido y registrado correctamente",
+        cae: resultadoAFIP.cae,
+        fechaVencimiento: resultadoAFIP.fechaVencimiento,
+      });
+    }
+
+    // Si no se solicita CAE, solo devolver la información de la factura
+    return res.json({
+      success: true,
+      factura: {
+        tipo: factura.DocumentoTipo,
+        puntoVenta: factura.DocumentoSucursal,
+        numero: factura.DocumentoNumero,
+        fecha: factura.Fecha,
+        cliente: factura.ClienteCodigo,
+        importeNeto: factura.ImporteNeto,
+        importeIva: factura.ImporteIva1,
+        total: factura.ImporteTotal,
       },
     });
   } catch (error) {
-    console.error("Error al grabar CAE:", error);
+    console.error("Error al procesar factura:", error);
     res.status(500).json({
-      error: "Error al actualizar la base de datos",
+      error: "Error al procesar la factura",
       detalle: error.message,
     });
   }
 };
+
+// Función auxiliar para mapear tipos de comprobante
+function mapearTipoComprobante(tipoAstrial) {
+  const mapa = {
+    FCA: 1, // Factura A
+    FCB: 6, // Factura B
+    NCA: 3, // Nota de Crédito A
+    NCB: 8, // Nota de Crédito B
+  };
+
+  return mapa[tipoAstrial] || 1; // Default a Factura A si no se encuentra
+}
