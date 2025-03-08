@@ -230,39 +230,41 @@ class AfipService {
         cuit: authData.Cuit,
       });
 
-      // Verificar formato de fecha
-      if (datosComprobante.fecha && datosComprobante.fecha.includes("-")) {
-        datosComprobante.fecha = datosComprobante.fecha.replace(/-/g, "");
-      }
+      // Formatear fecha según sea necesario
+      let fechaFormatted;
 
-      // PASO 1: La parte de la consulta explícita ya está comentada
+      // Si fecha es un objeto Date, convertirlo a formato AAAAMMDD
+      if (datosComprobante.fecha instanceof Date) {
+        fechaFormatted = datosComprobante.fecha
+          .toISOString()
+          .slice(0, 10)
+          .replace(/-/g, "");
+      }
+      // Si es un string, verificar si necesita formateo
+      else if (typeof datosComprobante.fecha === "string") {
+        // Si tiene formato YYYY-MM-DD, convertir a YYYYMMDD
+        if (datosComprobante.fecha.includes("-")) {
+          fechaFormatted = datosComprobante.fecha.replace(/-/g, "");
+        }
+        // Si tiene formato DD/MM/YYYY, convertir a YYYYMMDD
+        else if (datosComprobante.fecha.includes("/")) {
+          const parts = datosComprobante.fecha.split("/");
+          fechaFormatted = `${parts[2]}${parts[1]}${parts[0]}`;
+        }
+        // Si ya tiene formato YYYYMMDD, usarlo directamente
+        else {
+          fechaFormatted = datosComprobante.fecha;
+        }
+      }
+      // Alternativa: usar fecha actual
+      else {
+        const today = new Date();
+        fechaFormatted = today.toISOString().slice(0, 10).replace(/-/g, "");
+      }
 
       console.log(
         `NÚMERO DE COMPROBANTE DEFINITIVO: ${datosComprobante.numero}`
       );
-
-      // Comentando el manejo automático de error para número de comprobante
-      /*
-      } catch (error) {
-        console.error("Error al consultar último comprobante:", error);
-
-        // Si el error es por "no existe comprobante", usamos número 1
-        if (
-          error.message.includes("1502") ||
-          error.message.includes("no existe") ||
-          error.message.includes("inexistente")
-        ) {
-          console.log(
-            "Error esperado: No hay comprobantes previos. Se usará número 1."
-          );
-          datosComprobante.numero = 1;
-        } else {
-          throw new Error(
-            `No se pudo determinar el número de comprobante: ${error.message}`
-          );
-        }
-      }
-      */
 
       // Verificar el tipo de comprobante y establecer condición IVA adecuada
       const tipoComprobante = parseInt(datosComprobante.tipoComprobante, 10);
@@ -304,6 +306,21 @@ class AfipService {
         );
       }
 
+      // Asegurarse de que el DocNro sea numérico y válido
+      const docNro = datosComprobante.nroDocReceptor
+        ? parseInt(datosComprobante.nroDocReceptor.replace(/\D/g, ""), 10)
+        : 0;
+
+      if (!docNro || isNaN(docNro) || docNro < 1) {
+        throw new Error(
+          `Número de documento del receptor inválido: ${datosComprobante.nroDocReceptor}`
+        );
+      }
+
+      console.log(
+        `CUIT del receptor procesado: ${docNro} (original: ${datosComprobante.nroDocReceptor})`
+      );
+
       // Construcción del objeto de solicitud
       const solicitud = {
         Auth: authData,
@@ -315,12 +332,12 @@ class AfipService {
           },
           FeDetReq: {
             FECAEDetRequest: {
-              Concepto: parseInt(datosComprobante.concepto || 1, 10),
-              DocTipo: parseInt(datosComprobante.docTipo || 80, 10),
-              DocNro: datosComprobante.docNro,
+              Concepto: parseInt(datosComprobante.conceptoIncluido || 1, 10),
+              DocTipo: parseInt(datosComprobante.tipoDocReceptor || 80, 10),
+              DocNro: docNro.toString(), // Asignamos el CUIT como string
               CbteDesde: nroComprobante,
               CbteHasta: nroComprobante,
-              CbteFch: datosComprobante.fecha,
+              CbteFch: fechaFormatted,
               ImpTotal: parseFloat(datosComprobante.importeTotal),
               ImpTotConc: parseFloat(datosComprobante.importeNoGravado || 0),
               ImpNeto: parseFloat(datosComprobante.importeNeto),

@@ -128,13 +128,15 @@ exports.grabarCAE = async (req, res) => {
       });
     }
 
-    // Buscar la factura en la base de datos
+    // Buscar la factura en la base de datos y obtener datos del cliente
     const query = `
-      SELECT * FROM DocumentoVenta 
-      WHERE DocumentoTipo = ? 
-        AND DocumentoSucursal = ? 
-        AND DocumentoNumero = ?
-        AND Anulado = 0
+      SELECT f.*, c.cuit as ClienteCUIT, c.tipodocumento as ClienteTipoDoc
+      FROM facturaCabeza f
+      LEFT JOIN t_clientes c ON f.ClienteCodigo = c.codigo
+      WHERE f.DocumentoTipo = ? 
+        AND f.DocumentoSucursal = ? 
+        AND f.DocumentoNumero = ?
+        AND f.FechaAnulacion IS NULL
     `;
 
     // Ejecutar consulta
@@ -151,23 +153,46 @@ exports.grabarCAE = async (req, res) => {
     }
 
     const factura = facturas[0];
+    console.log("Datos de cliente encontrados:", {
+      codigo: factura.ClienteCodigo,
+      cuit: factura.ClienteCUIT,
+      tipoDoc: factura.ClienteTipoDoc,
+    });
 
     // Si se solicita CAE
     if (solicitarCAE) {
+      // Establecer el tipo de documento y número según los datos del cliente
+      let tipoDocReceptor = 80; // Por defecto CUIT
+      let nroDocReceptor = "20000000001"; // Valor por defecto
+
+      if (factura.ClienteCUIT) {
+        // Limpiar el CUIT/DNI de caracteres no numéricos
+        nroDocReceptor = factura.ClienteCUIT.replace(/\D/g, "");
+
+        // Si está definido el tipo de documento del cliente, usarlo
+        if (factura.ClienteTipoDoc) {
+          tipoDocReceptor = parseInt(factura.ClienteTipoDoc, 10);
+        }
+        // Si no hay tipo definido pero el número parece DNI (menor a 10 millones)
+        else if (parseInt(nroDocReceptor, 10) < 10000000) {
+          tipoDocReceptor = 96; // DNI
+        }
+      }
+
       // Preparar datos para solicitar CAE
       const datosComprobante = {
         tipoComprobante: mapearTipoComprobante(tipo),
-        puntoVenta: puntoVentaNum.toString(), // Asegurarse de que sea string para el servicio
-        numero: numeroFactura.toString(), // Asegurarse de que sea string para el servicio
-        fecha: factura.Fecha ? new Date(factura.Fecha) : new Date(),
+        puntoVenta: puntoVentaNum.toString(),
+        numero: numeroFactura.toString(),
+        fecha: factura.Fecha
+          ? new Date(factura.Fecha).toISOString().slice(0, 10).replace(/-/g, "")
+          : new Date().toISOString().slice(0, 10).replace(/-/g, ""),
         importeTotal: parseFloat(factura.ImporteTotal) || 0,
         importeNeto: parseFloat(factura.ImporteNeto) || 0,
         importeIva: parseFloat(factura.ImporteIva1) || 0,
         conceptoIncluido: 1, // 1 = Productos
-        tipoDocReceptor: 80, // 80 = CUIT
-        nroDocReceptor: factura.ClienteCuit
-          ? factura.ClienteCuit.replace(/\D/g, "")
-          : "20000000001",
+        tipoDocReceptor: tipoDocReceptor,
+        nroDocReceptor: nroDocReceptor,
         alicuotaIva: parseFloat(factura.PorcentajeIva1) || 21,
         condicionVenta: 1, // 1 = Contado
       };
