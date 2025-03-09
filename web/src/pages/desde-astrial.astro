@@ -191,7 +191,8 @@
         </div>
         
         <div class="form-group" style="align-self: flex-end;">
-          <button id="buscarBtn">Buscar Facturas</button>
+          <button id="buscarBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Buscar Facturas</button>
+          <button id="solicitarTodosBtn" class="ml-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Buscar todos los CAE</button>
         </div>
       </div>
       
@@ -242,6 +243,7 @@
         const userName = document.getElementById('userName');
         const logoutBtn = document.getElementById('logoutBtn');
         const buscarBtn = document.getElementById('buscarBtn');
+        const solicitarTodosBtn = document.getElementById('solicitarTodosBtn');
         const puntoVentaSelect = document.getElementById('puntoVenta');
         const tipoComprobanteSelect = document.getElementById('tipoComprobante');
         const facturasContainer = document.getElementById('facturasContainer');
@@ -282,6 +284,23 @@
             if (errorDiv) errorDiv.classList.add('hidden');
             if (successDiv) successDiv.classList.add('hidden');
             
+            // Obtener referencia a la celda de acción de la factura
+            const filaFactura = document.getElementById(`factura-${tipo}-${puntoVenta}-${numero}`);
+            const accionCell = filaFactura ? filaFactura.querySelector('td:last-child') : null;
+            
+            if (accionCell) {
+              // Mostrar indicador de carga
+              accionCell.innerHTML = `
+                <div class="flex items-center">
+                  <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Solicitando...
+                </div>
+              `;
+            }
+            
             const response = await fetch(`${API_URL}/astrial/grabar-cae`, {
               method: 'POST',
               headers: {
@@ -299,16 +318,15 @@
             const data = await response.json();
             
             if (response.ok && data.success) {
-              // Eliminamos la fila de la tabla para la factura actualizada
-              const filaFactura = document.getElementById(`factura-${tipo}-${puntoVenta}-${numero}`);
-              if (filaFactura && facturasBody) {
-                facturasBody.removeChild(filaFactura);
-                
-                // Actualizar contador
-                if (facturaCount && facturasBody) {
-                  const rowCount = facturasBody.querySelectorAll('tr').length;
-                  facturaCount.textContent = `Se encontraron ${rowCount} facturas sin CAE`;
-                }
+              // Actualizar la celda para mostrar el CAE
+              if (accionCell) {
+                accionCell.innerHTML = `
+                  <div class="px-2 py-1 bg-green-100 text-green-800 rounded">
+                    CAE: ${data.cae}
+                  </div>
+                `;
+                // Agregar un fondo verde claro a toda la fila
+                filaFactura.classList.add('bg-green-50');
               }
               
               // Mostrar mensaje de éxito
@@ -316,18 +334,131 @@
                 successDiv.textContent = `CAE obtenido correctamente: ${data.cae} (Vencimiento: ${data.fechaVencimiento})`;
                 successDiv.classList.remove('hidden');
               }
+              
+              return { success: true, cae: data.cae, error: null };
             } else {
+              // Actualizar celda para mostrar el error
+              if (accionCell) {
+                const errorMsg = data.error || 'Error al solicitar CAE';
+                accionCell.innerHTML = `
+                  <button class="px-2 py-1 bg-red-100 text-red-800 rounded error-details-btn" 
+                          data-error="${errorMsg.replace(/"/g, '&quot;')}">
+                    Error
+                  </button>
+                `;
+                // Agregar un fondo rojo claro a toda la fila
+                filaFactura.classList.add('bg-red-50');
+                
+                // Agregar evento al botón de error
+                accionCell.querySelector('.error-details-btn')?.addEventListener('click', (e) => {
+                  const btn = e.target as HTMLButtonElement;
+                  alert(btn.dataset.error || 'Error desconocido');
+                });
+              }
+              
               if (errorDiv) {
                 errorDiv.textContent = data.error || 'Error al solicitar CAE';
                 errorDiv.classList.remove('hidden');
               }
+              
+              return { success: false, cae: null, error: data.error || 'Error al solicitar CAE' };
             }
           } catch (error) {
             console.error('Error:', error);
+            
+            // Actualizar celda para mostrar el error
+            const filaFactura = document.getElementById(`factura-${tipo}-${puntoVenta}-${numero}`);
+            const accionCell = filaFactura ? filaFactura.querySelector('td:last-child') : null;
+            
+            if (accionCell) {
+              accionCell.innerHTML = `
+                <button class="px-2 py-1 bg-red-100 text-red-800 rounded error-details-btn" 
+                        data-error="Error de conexión: No se pudo contactar al servidor">
+                  Error
+                </button>
+              `;
+              // Agregar un fondo rojo claro a toda la fila
+              filaFactura.classList.add('bg-red-50');
+              
+              // Agregar evento al botón de error
+              accionCell.querySelector('.error-details-btn')?.addEventListener('click', (e) => {
+                const btn = e.target as HTMLButtonElement;
+                alert(btn.dataset.error || 'Error desconocido');
+              });
+            }
+            
             if (errorDiv) {
               errorDiv.textContent = 'Error al comunicarse con el servidor';
               errorDiv.classList.remove('hidden');
             }
+            
+            return { success: false, cae: null, error: 'Error al comunicarse con el servidor' };
+          }
+        };
+        
+        // Función para procesar todas las facturas secuencialmente
+        const solicitarTodosCAE = async () => {
+          // Verificar si hay facturas para procesar
+          const filas = facturasBody?.querySelectorAll('tr');
+          if (!filas || filas.length === 0) {
+            if (errorDiv) {
+              errorDiv.textContent = 'No hay facturas para procesar';
+              errorDiv.classList.remove('hidden');
+            }
+            return;
+          }
+          
+          // Mostrar mensaje de inicio
+          if (successDiv) {
+            successDiv.textContent = `Iniciando proceso para ${filas.length} facturas...`;
+            successDiv.classList.remove('hidden');
+          }
+          
+          let procesadas = 0;
+          let exitosas = 0;
+          let fallidas = 0;
+          
+          // Procesar cada factura secuencialmente
+          for (const fila of filas) {
+            // Verificar si esta fila ya tiene un CAE o error (si ya tiene un fondo verde o rojo)
+            if (fila.classList.contains('bg-green-50') || fila.classList.contains('bg-red-50')) {
+              procesadas++;
+              continue; // Saltar esta factura
+            }
+            
+            const botonSolicitar = fila.querySelector('.solicitar-cae-btn') as HTMLButtonElement;
+            if (!botonSolicitar) {
+              procesadas++;
+              continue; // No hay botón de solicitar, saltar
+            }
+            
+            const tipo = botonSolicitar.dataset.tipo || '';
+            const puntoVenta = botonSolicitar.dataset.puntoVenta || '';
+            const numero = botonSolicitar.dataset.numero || '';
+            
+            // Actualizar mensaje de progreso
+            if (successDiv) {
+              successDiv.textContent = `Procesando ${procesadas + 1} de ${filas.length}: ${tipo} ${puntoVenta}-${numero}`;
+            }
+            
+            // Solicitar CAE
+            const resultado = await solicitarCAE(tipo, puntoVenta, numero);
+            procesadas++;
+            
+            if (resultado.success) {
+              exitosas++;
+            } else {
+              fallidas++;
+            }
+            
+            // Pequeña pausa para evitar sobrecargar el servidor
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+          
+          // Mostrar resumen final
+          if (successDiv) {
+            successDiv.textContent = `Proceso completado: ${exitosas} exitosas, ${fallidas} fallidas de ${procesadas} procesadas.`;
+            successDiv.classList.remove('hidden');
           }
         };
         
@@ -441,6 +572,11 @@
               if (facturasContainer) facturasContainer.classList.add('hidden');
             }
           });
+        }
+        
+        // Agregar el event listener para el botón de solicitar todos los CAE
+        if (solicitarTodosBtn) {
+          solicitarTodosBtn.addEventListener('click', solicitarTodosCAE);
         }
       });
     </script>
