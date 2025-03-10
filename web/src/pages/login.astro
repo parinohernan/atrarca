@@ -1,180 +1,125 @@
 ---
-// Lógica del servidor si es necesaria
+// Esta página NO usa el Layout común
 ---
 
+<!DOCTYPE html>
 <html lang="es">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Iniciar Sesión - Sistema AFIP</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Login - Sistema de facturación electrónica ARCA" />
+    <title>Login - Sistema ARCA</title>
     <style>
       body {
         font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
         margin: 0;
         padding: 0;
-        background-color: #f5f5f5;
         display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-      }
-      
-      header {
-        background-color: #00395d;
-        color: white;
-        padding: 1rem;
-        text-align: center;
-      }
-      
-      main {
-        flex: 1;
-        display: flex;
-        align-items: center;
         justify-content: center;
-        padding: 2rem;
+        align-items: center;
+        height: 100vh;
       }
       
       .login-container {
         background-color: white;
         border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         padding: 2rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         width: 100%;
         max-width: 400px;
       }
       
-      h2 {
-        color: #00395d;
+      h1 {
+        color: #2c3e50;
         text-align: center;
         margin-top: 0;
         margin-bottom: 1.5rem;
       }
       
       .form-group {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
       }
       
       label {
         display: block;
-        font-weight: bold;
         margin-bottom: 0.5rem;
+        color: #4a5568;
       }
       
       input {
         width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #ddd;
+        padding: 0.5rem;
+        border: 1px solid #cbd5e0;
         border-radius: 4px;
-        font-size: 1rem;
-        box-sizing: border-box;
       }
       
       button {
         width: 100%;
         padding: 0.75rem;
-        background-color: #0056b3;
+        background-color: #3498db;
         color: white;
         border: none;
         border-radius: 4px;
-        font-size: 1rem;
         cursor: pointer;
-        transition: background-color 0.3s;
-      }
-      
-      button:hover {
-        background-color: #003d7a;
-      }
-      
-      .error-message {
-        color: #d32f2f;
-        text-align: center;
+        font-size: 1rem;
         margin-top: 1rem;
       }
       
-      footer {
-        background-color: #f0f0f0;
-        text-align: center;
-        padding: 1rem;
-        margin-top: auto;
+      button:hover {
+        background-color: #2980b9;
+      }
+      
+      .error-message {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 0.75rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        display: none;
       }
     </style>
   </head>
-  
   <body>
-    <header>
-      <h1>Sistema de Gestión AFIP</h1>
-    </header>
-    
-    <main>
-      <div class="login-container">
-        <h2>Iniciar Sesión</h2>
+    <div class="login-container">
+      <h1>Sistema de Gestión ARCA</h1>
+      
+      <div id="errorDiv" class="error-message"></div>
+      
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">Usuario</label>
+          <input type="text" id="username" required />
+        </div>
         
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="username">Usuario:</label>
-            <input type="text" id="username" name="username" required>
-          </div>
-          
-          <div class="form-group">
-            <label for="password">Contraseña:</label>
-            <input type="password" id="password" name="password" required>
-          </div>
-          
-          <button type="submit">Ingresar</button>
-        </form>
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" required />
+        </div>
         
-        <div id="errorMessage" class="error-message hidden"></div>
-      </div>
-    </main>
-    
-    <footer>
-      <p>&copy; 2023 Sistema de Gestión AFIP</p>
-    </footer>
+        <button type="submit">Iniciar sesión</button>
+      </form>
+    </div>
     
     <script>
-      // URL de la API
-      const API_URL = 'http://localhost:3301/api';
-      
       document.addEventListener('DOMContentLoaded', () => {
-        // Verificar si ya hay sesión activa
+        const API_URL = 'http://localhost:3301/api';
+        const loginForm = document.getElementById('loginForm');
+        const errorDiv = document.getElementById('errorDiv');
+        
+        // Comprobar si ya hay sesión
         const token = localStorage.getItem('token');
         if (token) {
-          // Verificar si el token es válido
-          fetch(`${API_URL}/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
-          .then(response => {
-            if (response.ok) {
-              // Si el token es válido, redirigir al index
-              window.location.href = '/';
-            } else {
-              // Si el token no es válido, limpiar localStorage
-              localStorage.removeItem('token');
-              localStorage.removeItem('user');
-            }
-          })
-          .catch(error => {
-            console.error('Error al verificar token:', error);
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-          });
+          window.location.href = '/';
+          return;
         }
         
-        const loginForm = document.getElementById('loginForm');
-        const errorMessage = document.getElementById('errorMessage');
-        
-        // Verificar que los elementos existan antes de usarlos
-        if (loginForm && errorMessage) {
+        if (loginForm) {
           loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Ocultar mensaje de error anterior
-            errorMessage.classList.add('hidden');
-            errorMessage.textContent = '';
-            
-            const username = (document.getElementById('username') as HTMLInputElement)?.value || '';
-            const password = (document.getElementById('password') as HTMLInputElement)?.value || '';
+            const username = (document.getElementById('username') as HTMLInputElement).value;
+            const password = (document.getElementById('password') as HTMLInputElement).value;
             
             try {
               const response = await fetch(`${API_URL}/auth/login`, {
@@ -187,26 +132,24 @@
               
               const data = await response.json();
               
-              if (response.ok && data.success) {
-                // Guardar token y datos del usuario
+              if (response.ok && data.token) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
-                
-                // Redirigir al index
                 window.location.href = '/';
               } else {
-                // Mostrar mensaje de error
-                errorMessage.textContent = data.error || 'Error al iniciar sesión';
-                errorMessage.classList.remove('hidden');
+                if (errorDiv) {
+                  errorDiv.textContent = data.error || 'Error de autenticación';
+                  errorDiv.style.display = 'block';
+                }
               }
             } catch (error) {
               console.error('Error:', error);
-              errorMessage.textContent = 'Error al conectar con el servidor';
-              errorMessage.classList.remove('hidden');
+              if (errorDiv) {
+                errorDiv.textContent = 'Error al comunicarse con el servidor';
+                errorDiv.style.display = 'block';
+              }
             }
           });
-        } else {
-          console.error('No se encontraron elementos del formulario necesarios');
         }
       });
     </script>

@@ -1,308 +1,61 @@
 ---
 // Componentes y lógica del servidor
+// Esta importación debe estar dentro de los --- de Astro
+// Intenta importar el Layout desde ./Layout.astro (en la misma carpeta)
+import Layout from './Layout.astro';
 ---
 
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Consulta AFIP</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f5f5f5;
-      }
-      header {
-        background-color: #00395d;
-        color: white;
-        padding: 1rem;
-        text-align: center;
-      }
-      main {
-        max-width: 800px;
-        margin: 2rem auto;
-        padding: 1rem;
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      nav {
-        background-color: #00395d;
-        border-color: #c1ced6;
-        border-width: 1px;
-        padding: 0.5rem;
-        text-align: center;
-      }
-      nav a {
-        color: rgba(172, 166, 201, 0.952);
-        text-decoration: none;
-        margin: 0 1rem;
-        padding: 0.3rem 0.5rem;
-        border-radius: 4px;
-      }
-      nav a:hover {
-        background-color: rgba(54, 147, 190, 0.66);
-      }
-      .form-group {
-        margin-bottom: 1rem;
-      }
-      label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: bold;
-      }
-      input, select {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-      button {
-        background-color: #0056b3;
-        color: white;
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
-      button:hover {
-        background-color: #003d7a;
-      }
-      .result-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-      }
-      .result-table th, .result-table td {
-        border: 1px solid #ddd;
-        padding: 0.5rem;
-        text-align: left;
-      }
-      .result-table th {
-        background-color: #f2f2f2;
-        font-weight: bold;
-      }
-      .hidden {
-        display: none;
-      }
-      .error {
-        color: red;
-        margin-top: 1rem;
-        padding: 0.5rem;
-        background-color: #ffeeee;
-        border: 1px solid #ffcccc;
-        border-radius: 4px;
-      }
-      .user-info {
-        margin-bottom: 0.5rem;
-        text-align: right;
-        font-size: 0.9rem;
-      }
-      
-      #logoutBtn {
-        background-color: transparent;
-        color: white;
-        border: 1px solid white;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-        cursor: pointer;
-        margin-left: 0.5rem;
-      }
-      
-      #logoutBtn:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-      }
-    </style>
-  </head>
-  <body>
-    <header>
-      <h1>Sistema de Consultas AFIP</h1>
-      <div class="user-info" id="userInfo">
-        <span id="userName"></span>
-        <button id="logoutBtn" class="hidden">Cerrar Sesión</button>
-      </div>
-      <nav>
-        <a href="/">Inicio</a>
-        <a href="/solicitar-cae">Solicitar CAE</a>
-        <a href="/desde-astrial">Desde ASTRIAL</a>
-        <span id="userName" class="user-name"></span>
-        <button id="logoutBtn" class="logout-btn hidden">Cerrar sesión</button>
-      </nav>
-    </header>
+<Layout title="Inicio - Sistema ARCA">
+  <h2>Bienvenido al Sistema de Facturación Electrónica ARCA</h2>
+  
+  <div class="card-container">
+    <div class="card">
+      <h3>Solicitar CAE</h3>
+      <p>Genere comprobantes electrónicos y obtenga CAE de ARCA</p>
+      <a href="/solicitar-cae" class="btn">Ir a Solicitar CAE</a>
+    </div>
     
-    <main>
-      <h2>Consulta de Último Comprobante</h2>
-      
-      <form id="consultaForm">
-        <div class="form-group">
-          <label for="puntoVenta">Punto de Venta:</label>
-          <select id="puntoVenta" required>
-            <option value="">Seleccionar...</option>
-            <option value="1">0001</option>
-            <option value="2">0002</option>
-            <option value="3">0003</option>
-            <option value="4">0004</option>
-            <option value="5">0005</option>
-            <option value="6">0006</option>
-            <option value="7">0007</option>
-            <option value="8">0008</option>
-            <option value="9">0009</option>
-            
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label for="tipoComprobante">Tipo de Comprobante:</label>
-          <select id="tipoComprobante" required>
-            <option value="">Seleccionar...</option>
-            <option value="1">Factura A</option>
-            <option value="6">Factura B</option>
-            <option value="11">Factura C</option>
-            <option value="3">Nota de Crédito A</option>
-            <option value="8">Nota de Crédito B</option>
-            <option value="13">Nota de Crédito C</option>
-          </select>
-        </div>
-        
-        <button type="submit">Consultar</button>
-      </form>
-      
-      <div id="resultado" class="hidden">
-        <h3>Resultado de la consulta</h3>
-        <div id="resultadoContenido"></div>
-      </div>
-      
-      <div id="error" class="error hidden"></div>
-    </main>
+    <div class="card">
+      <h3>Desde ASTRIAL</h3>
+      <p>Procese facturas pendientes desde el sistema ASTRIAL</p>
+      <a href="/desde-astrial" class="btn">Ir a Desde ASTRIAL</a>
+    </div>
+  </div>
 
-    <script>
-      // URL de la API
-      const API_URL = 'http://localhost:3301/api';
-      
-      document.addEventListener('DOMContentLoaded', () => {
-        // Obtener elementos
-        const consultaForm = document.getElementById('consultaForm');
-        const resultadoDiv = document.getElementById('resultado');
-        const resultadoContenido = document.getElementById('resultadoContenido');
-        const errorDiv = document.getElementById('error');
-        const userInfo = document.getElementById('userInfo');
-        const userName = document.getElementById('userName');
-        const logoutBtn = document.getElementById('logoutBtn');
-        
-        // Verificar que los elementos existan
-        if (!consultaForm || !resultadoDiv || !resultadoContenido || !errorDiv || !userInfo || !userName || !logoutBtn) {
-          console.error('No se pudieron encontrar elementos DOM necesarios');
-          return;
-        }
-        
-        consultaForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          
-          // Obtener valores con casting de tipo para evitar errores TypeScript
-          const puntoVenta = (document.getElementById('puntoVenta') as HTMLSelectElement).value;
-          const tipoComprobante = (document.getElementById('tipoComprobante') as HTMLSelectElement).value;
-          
-          if (!puntoVenta || !tipoComprobante) {
-            errorDiv.textContent = 'Debe seleccionar punto de venta y tipo de comprobante.';
-            errorDiv.classList.remove('hidden');
-            return;
-          }
-          
-          try {
-            // Llamada a la API
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/afip/ultimo-comprobante?puntoVenta=${puntoVenta}&tipoComprobante=${tipoComprobante}`, {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-            
-            if (response.status === 401 || response.status === 403) {
-              // Redirigir al login si es necesario
-              window.location.href = '/login';
-              return;
-            }
-            
-            const data = await response.json();
-            
-            console.log('Respuesta del servidor:', data);
-            
-            if (data.success) {
-              // Limpiar contenido anterior
-              resultadoContenido.innerHTML = '';
-              console.log(data);
-              // Crear tabla de detalles
-              const table = document.createElement('table');
-              table.className = 'result-table';
-              
-              // Crear filas con la información
-              table.innerHTML = `
-                <tr>
-                  <th>Fecha</th>
-                  <td>${data.fecha}</td>
-                </tr>
-                <tr>
-                  <th>Último comprobante</th>
-                  <td>${data.ultimoComprobante}</td>
-                </tr>
-                <tr>
-                  <th>Punto de venta</th>
-                  <td>${puntoVenta.toString().padStart(4, '0')}</td>
-                </tr>
-                <tr>
-                  <th>Tipo de comprobante</th>
-                  <td>${getTipoComprobanteNombre(tipoComprobante)}</td>
-                </tr>
-              `;
-              
-              // Agregar tabla al contenedor
-              resultadoContenido.appendChild(table);
-              resultadoDiv.classList.remove('hidden');
-            } else {
-              errorDiv.textContent = data.detalle || 'Ocurrió un error al procesar la solicitud.';
-              errorDiv.classList.remove('hidden');
-            }
-          } catch (error) {
-            console.error('Error completo:', error);
-            errorDiv.textContent = 'Error al conectar con el servidor.';
-            errorDiv.classList.remove('hidden');
-          }
-        });
-        
-        // Función para obtener nombre del tipo de comprobante
-        function getTipoComprobanteNombre(tipo) {
-          const tipos = {
-            '1': 'Factura A',
-            '6': 'Factura B',
-            '11': 'Factura C',
-            '3': 'Nota de Crédito A',
-            '8': 'Nota de Crédito B',
-            '13': 'Nota de Crédito C'
-          };
-          return tipos[tipo] || `Tipo ${tipo}`;
-        }
-        
-        // Verificar si hay un usuario conectado
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          userName.textContent = `Usuario: ${user.name}`;
-          logoutBtn.classList.remove('hidden');
-          
-          // Agregar funcionalidad al botón de logout
-          logoutBtn.addEventListener('click', () => {
-            // Limpiar localStorage
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            
-            // Recargar la página
-            window.location.reload();
-          });
-        }
-      });
-    </script>
-  </body>
-</html> 
+  <style>
+    .card-container {
+      display: flex;
+      gap: 2rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      flex: 1;
+      min-width: 300px;
+    }
+    
+    .card h3 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    
+    .btn {
+      display: inline-block;
+      background-color: #3498db;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-top: 1rem;
+    }
+    
+    .btn:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</Layout> 

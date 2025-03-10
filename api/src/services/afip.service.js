@@ -230,36 +230,45 @@ class AfipService {
         cuit: authData.Cuit,
       });
 
-      // Formatear fecha según sea necesario
-      let fechaFormatted;
+      // Formatear TODOS los importes con exactamente 2 decimales
+      // Usamos Math.round(value * 100) / 100 para mayor precisión
+      const importeTotal =
+        Math.round(parseFloat(datosComprobante.importeTotal || 0) * 100) / 100;
+      const importeNeto =
+        Math.round(parseFloat(datosComprobante.importeNeto || 0) * 100) / 100;
+      const importeIva =
+        Math.round(parseFloat(datosComprobante.importeIva || 0) * 100) / 100;
 
-      // Si fecha es un objeto Date, convertirlo a formato AAAAMMDD
-      if (datosComprobante.fecha instanceof Date) {
-        fechaFormatted = datosComprobante.fecha
-          .toISOString()
-          .slice(0, 10)
-          .replace(/-/g, "");
+      // Verificar que los importes sean válidos
+      if (isNaN(importeTotal) || isNaN(importeNeto) || isNaN(importeIva)) {
+        throw new Error("Los importes deben ser números válidos");
       }
-      // Si es un string, verificar si necesita formateo
-      else if (typeof datosComprobante.fecha === "string") {
-        // Si tiene formato YYYY-MM-DD, convertir a YYYYMMDD
-        if (datosComprobante.fecha.includes("-")) {
-          fechaFormatted = datosComprobante.fecha.replace(/-/g, "");
-        }
-        // Si tiene formato DD/MM/YYYY, convertir a YYYYMMDD
-        else if (datosComprobante.fecha.includes("/")) {
-          const parts = datosComprobante.fecha.split("/");
-          fechaFormatted = `${parts[2]}${parts[1]}${parts[0]}`;
-        }
-        // Si ya tiene formato YYYYMMDD, usarlo directamente
-        else {
-          fechaFormatted = datosComprobante.fecha;
-        }
+
+      // Verificar que los importes sumen correctamente
+      const sumaCalculada = importeNeto + importeIva;
+      if (Math.abs(sumaCalculada - importeTotal) > 0.01) {
+        console.warn(
+          `Inconsistencia en importes: Total=${importeTotal}, Suma(Neto+IVA)=${sumaCalculada}`
+        );
+        // Ajustar importeTotal para que sea exactamente la suma
+        datosComprobante.importeTotal = sumaCalculada;
+      } else {
+        datosComprobante.importeTotal = importeTotal;
       }
-      // Alternativa: usar fecha actual
-      else {
-        const today = new Date();
-        fechaFormatted = today.toISOString().slice(0, 10).replace(/-/g, "");
+
+      datosComprobante.importeNeto = importeNeto;
+      datosComprobante.importeIva = importeIva;
+
+      // Asegurarse de que la fecha no sea futura
+      const fechaActual = new Date()
+        .toISOString()
+        .slice(0, 10)
+        .replace(/-/g, "");
+      if (datosComprobante.fecha > fechaActual) {
+        console.warn(
+          `Fecha futura detectada: ${datosComprobante.fecha}, usando fecha actual`
+        );
+        datosComprobante.fecha = fechaActual;
       }
 
       console.log(
@@ -322,11 +331,6 @@ class AfipService {
       );
 
       // Asegurar consistencia en los importes
-      const importeNeto = parseFloat(datosComprobante.importeNeto) || 0;
-      const importeIva = parseFloat(datosComprobante.importeIva) || 0;
-      const importeTotal = parseFloat(datosComprobante.importeTotal) || 0;
-
-      // Verificar consistencia de montos
       const sumaImportes = importeNeto + importeIva;
 
       if (Math.abs(importeTotal - sumaImportes) > 0.1) {
@@ -370,23 +374,23 @@ class AfipService {
         FeCAEReq: {
           FeCabReq: {
             CantReg: 1,
-            PtoVta: parseInt(datosComprobante.puntoVenta, 10),
-            CbteTipo: tipoComprobante,
+            PtoVta: parseInt(datosComprobante.puntoVenta),
+            CbteTipo: parseInt(tipoComprobante),
           },
           FeDetReq: {
             FECAEDetRequest: {
-              Concepto: parseInt(datosComprobante.conceptoIncluido || 1, 10),
-              DocTipo: parseInt(datosComprobante.tipoDocReceptor || 80, 10),
-              DocNro: docNro.toString(),
+              Concepto: parseInt(datosComprobante.conceptoIncluido || 1),
+              DocTipo: parseInt(datosComprobante.tipoDocReceptor || 80),
+              DocNro: datosComprobante.nroDocReceptor,
               CbteDesde: nroComprobante,
               CbteHasta: nroComprobante,
-              CbteFch: fechaFormatted,
-              ImpTotal: sumaImportes, // Usar la suma de importes para garantizar consistencia
-              ImpTotConc: 0, // Importe no gravado
-              ImpNeto: importeNeto,
-              ImpOpEx: 0, // Operaciones exentas
-              ImpIVA: importeIva,
-              ImpTrib: 0, // Tributos
+              CbteFch: datosComprobante.fecha,
+              ImpTotal: parseFloat(datosComprobante.importeTotal.toFixed(2)),
+              ImpTotConc: 0,
+              ImpNeto: parseFloat(datosComprobante.importeNeto.toFixed(2)),
+              ImpOpEx: 0,
+              ImpIVA: parseFloat(datosComprobante.importeIva.toFixed(2)),
+              ImpTrib: 0,
               FchServDesde: null,
               FchServHasta: null,
               FchVtoPago: null,
@@ -424,6 +428,41 @@ class AfipService {
         "PASO 2: Enviando solicitud a AFIP:",
         JSON.stringify(solicitud)
       );
+
+      // En el método obtenerCAE, antes de enviar la solicitud
+      console.log("Solicitud a AFIP detallada:");
+      console.log("- Auth:", {
+        Token: "***TOKEN***", // No imprimir el token completo por seguridad
+        Sign: "***SIGN***", // No imprimir la firma completa por seguridad
+        Cuit: authData.Cuit,
+      });
+      console.log("- Datos del comprobante:");
+      console.log(
+        "  - Tipo:",
+        solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.CbteTipo
+      );
+      console.log(
+        "  - Punto de venta:",
+        solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.PtoVta
+      );
+      console.log(
+        "  - Número:",
+        solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.CbteDesde
+      );
+      console.log(
+        "  - Fecha:",
+        solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.CbteFch
+      );
+      console.log(
+        "  - Doc. Receptor:",
+        solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.DocTipo,
+        solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.DocNro
+      );
+      console.log("  - Importes:", {
+        Total: solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.ImpTotal,
+        Neto: solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.ImpNeto,
+        IVA: solicitud.FeCAEReq.FeDetReq.FECAEDetRequest.ImpIVA,
+      });
 
       // Ejecutar solicitud
       const resultado = await new Promise((resolve, reject) => {

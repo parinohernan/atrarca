@@ -195,11 +195,14 @@ exports.grabarCAE = async (req, res) => {
     const tabla = esNotaCredito ? "notacreditocabeza" : "facturaCabeza";
     const clienteField = esNotaCredito ? "CodigoCliente" : "ClienteCodigo";
 
-    // Buscar el documento en la base de datos y obtener datos del cliente
+    // SOLUCIÓN ALTERNATIVA: Consulta modificada para asegurar que la unión funcione correctamente
     const query = `
-      SELECT d.*, c.cuit as ClienteCUIT, c.tipodocumento as ClienteTipoDoc
+      SELECT d.*, 
+             c.cuit as ClienteCUIT, 
+             c.tipodocumento as ClienteTipoDoc,
+             d.${clienteField} as CodigoClienteReal
       FROM ${tabla} d
-      LEFT JOIN t_clientes c ON d.${clienteField} = c.codigo
+      LEFT JOIN t_clientes c ON TRIM(d.${clienteField}) = TRIM(c.codigo)
       WHERE d.DocumentoTipo = ? 
         AND d.DocumentoSucursal = ? 
         AND d.DocumentoNumero = ?
@@ -229,15 +232,21 @@ exports.grabarCAE = async (req, res) => {
       }
     );
 
+    // Agregar logging adicional para depuración
+    console.log(
+      "Estructura completa del documento:",
+      JSON.stringify(documento)
+    );
+
     // Si se solicita CAE
     if (solicitarCAE) {
       // Establecer el tipo de documento y número según los datos del cliente
       let tipoDocReceptor = 80; // Por defecto CUIT
       let nroDocReceptor = "20000000001"; // Valor por defecto
-
       if (documento.ClienteCUIT) {
         // Limpiar el CUIT/DNI de caracteres no numéricos
         nroDocReceptor = documento.ClienteCUIT.replace(/\D/g, "");
+        console.log(`CUIT del cliente procesado: ${nroDocReceptor}`);
 
         // Si está definido el tipo de documento del cliente, usarlo
         if (documento.ClienteTipoDoc) {
@@ -246,6 +255,28 @@ exports.grabarCAE = async (req, res) => {
         // Si no hay tipo definido pero el número parece DNI (menor a 10 millones)
         else if (parseInt(nroDocReceptor, 10) < 10000000) {
           tipoDocReceptor = 96; // DNI
+        }
+      } else {
+        console.log(
+          "ADVERTENCIA: No se encontró CUIT para el cliente, usando valor por defecto"
+        );
+      }
+
+      // Validación adicional para el CUIT
+      if (nroDocReceptor) {
+        // Eliminar caracteres no numéricos
+        nroDocReceptor = nroDocReceptor.replace(/\D/g, "");
+
+        // Verificar longitud del CUIT (debe ser 11 dígitos)
+        if (nroDocReceptor.length !== 11) {
+          console.warn(
+            `CUIT con formato incorrecto: ${nroDocReceptor}, longitud: ${nroDocReceptor.length}`
+          );
+          // Si es un CUIT incompleto y el tipo doc es 80, usar consumidor final
+          if (tipoDocReceptor === 80) {
+            tipoDocReceptor = 99; // Tipo doc consumidor final
+            nroDocReceptor = "0"; // Número para consumidor final
+          }
         }
       }
 
@@ -268,20 +299,39 @@ exports.grabarCAE = async (req, res) => {
         };
       }
 
-      // Preparar datos para solicitar CAE
+      // Corregir el formato de los importes para la solicitud de CAE
+      const importeTotal = parseFloat(
+        parseFloat(documento.ImporteTotal).toFixed(2)
+      );
+      const importeNeto = parseFloat(
+        parseFloat(documento.ImporteNeto).toFixed(2)
+      );
+      const importeIva = parseFloat(
+        parseFloat(documento.ImporteIva1).toFixed(2)
+      );
+
+      // Asegurar que la fecha no sea futura
+      const fechaActual = new Date()
+        .toISOString()
+        .slice(0, 10)
+        .replace(/-/g, "");
+      const fechaDocumento = documento.Fecha
+        ? new Date(documento.Fecha).toISOString().slice(0, 10).replace(/-/g, "")
+        : fechaActual;
+
+      // Si la fecha es futura, usar la fecha actual
+      const fechaFinal =
+        fechaDocumento > fechaActual ? fechaActual : fechaDocumento;
+
+      // Usar la fecha corregida
       const datosComprobante = {
         tipoComprobante: mapearTipoComprobante(tipo),
         puntoVenta: puntoVentaNum.toString(),
         numero: numeroFactura.toString(),
-        fecha: documento.Fecha
-          ? new Date(documento.Fecha)
-              .toISOString()
-              .slice(0, 10)
-              .replace(/-/g, "")
-          : new Date().toISOString().slice(0, 10).replace(/-/g, ""),
-        importeTotal: parseFloat(documento.ImporteTotal) || 0,
-        importeNeto: parseFloat(documento.ImporteNeto) || 0,
-        importeIva: parseFloat(documento.ImporteIva1) || 0,
+        fecha: fechaFinal,
+        importeTotal: importeTotal,
+        importeNeto: importeNeto,
+        importeIva: importeIva,
         conceptoIncluido: 1, // 1 = Productos
         tipoDocReceptor: tipoDocReceptor,
         nroDocReceptor: nroDocReceptor,
