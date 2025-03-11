@@ -38,34 +38,36 @@ exports.getFacturasSinCAE = async (req, res) => {
     if (!tipo || tipo === "FCA" || tipo === "FCB") {
       let queryFacturas = `
         SELECT 
-          DocumentoTipo, 
-          DocumentoSucursal, 
-          DocumentoNumero, 
-          Fecha, 
-          ClienteCodigo as CodigoCliente, 
-          ImporteNeto,
-          ImporteIva1,
-          ImporteTotal,
-          PorcentajeIva1,
-          'factura' as TipoDocumento
-        FROM facturaCabeza 
-        WHERE (afip_cae IS NULL OR afip_cae = '')
+          f.DocumentoTipo, 
+          f.DocumentoSucursal, 
+          f.DocumentoNumero, 
+          f.Fecha, 
+          f.ClienteCodigo as CodigoCliente, 
+          f.ImporteNeto,
+          f.ImporteIva1,
+          f.ImporteTotal,
+          f.PorcentajeIva1,
+          'factura' as TipoDocumento,
+          c.descripcion as ClienteDescripcion
+        FROM facturaCabeza f
+        LEFT JOIN t_clientes c ON f.ClienteCodigo = c.codigo
+        WHERE (f.afip_cae IS NULL OR f.afip_cae = '')
       `;
 
       // Agregar condiciones de filtro
       const paramsFacturas = [];
 
       if (puntoVenta) {
-        queryFacturas += ` AND DocumentoSucursal = ?`;
+        queryFacturas += ` AND f.DocumentoSucursal = ?`;
         paramsFacturas.push(puntoVenta);
       }
 
       if (tipo) {
-        queryFacturas += ` AND DocumentoTipo = ?`;
+        queryFacturas += ` AND f.DocumentoTipo = ?`;
         paramsFacturas.push(tipo);
       }
 
-      queryFacturas += ` ORDER BY Fecha DESC LIMIT 50`;
+      queryFacturas += ` ORDER BY f.Fecha DESC LIMIT 50`;
 
       // Ejecutar consulta para facturas
       const facturasResult = await dbService.query(
@@ -80,37 +82,39 @@ exports.getFacturasSinCAE = async (req, res) => {
     if (!tipo || tipo === "NCA" || tipo === "NCB") {
       let queryNC = `
         SELECT 
-          DocumentoTipo, 
-          DocumentoSucursal, 
-          DocumentoNumero, 
-          Fecha, 
-          CodigoCliente, 
-          ImporteNeto,
-          ImporteIva1,
-          ImporteTotal,
-          PorcentajeIva1,
+          nc.DocumentoTipo, 
+          nc.DocumentoSucursal, 
+          nc.DocumentoNumero, 
+          nc.Fecha, 
+          nc.CodigoCliente, 
+          nc.ImporteNeto,
+          nc.ImporteIva1,
+          nc.ImporteTotal,
+          nc.PorcentajeIva1,
           'notacredito' as TipoDocumento,
-          factura_tipo,
-          factura_sucursal,
-          factura_numero
-        FROM notacreditocabeza 
-        WHERE (afip_cae IS NULL OR afip_cae = '')
+          nc.factura_tipo,
+          nc.factura_sucursal,
+          nc.factura_numero,
+          c.descripcion as ClienteDescripcion
+        FROM notacreditocabeza nc
+        LEFT JOIN t_clientes c ON nc.CodigoCliente = c.codigo
+        WHERE (nc.afip_cae IS NULL OR nc.afip_cae = '')
       `;
 
       // Agregar condiciones de filtro
       const paramsNC = [];
 
       if (puntoVenta) {
-        queryNC += ` AND DocumentoSucursal = ?`;
+        queryNC += ` AND nc.DocumentoSucursal = ?`;
         paramsNC.push(puntoVenta);
       }
 
       if (tipo) {
-        queryNC += ` AND DocumentoTipo = ?`;
+        queryNC += ` AND nc.DocumentoTipo = ?`;
         paramsNC.push(tipo);
       }
 
-      queryNC += ` ORDER BY Fecha DESC LIMIT 50`;
+      queryNC += ` ORDER BY nc.Fecha DESC LIMIT 50`;
 
       // Ejecutar consulta para notas de crédito
       const ncResult = await dbService.query(empresa, queryNC, paramsNC);
@@ -126,7 +130,8 @@ exports.getFacturasSinCAE = async (req, res) => {
       puntoVenta: f.DocumentoSucursal,
       numero: f.DocumentoNumero,
       fecha: f.Fecha ? f.Fecha.toISOString().split("T")[0] : null,
-      cliente: f.CodigoCliente, // Usamos CodigoCliente para ambos tipos de documentos
+      cliente: f.CodigoCliente,
+      clienteDescripcion: f.ClienteDescripcion,
       importeNeto: f.ImporteNeto,
       importeIva: f.ImporteIva1,
       total: f.ImporteTotal,
@@ -140,7 +145,7 @@ exports.getFacturasSinCAE = async (req, res) => {
           }
         : null,
     }));
-
+    console.log("facturasFormateadas", facturasFormateadas);
     res.json({
       success: true,
       facturas: facturasFormateadas,

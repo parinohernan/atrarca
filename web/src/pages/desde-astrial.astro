@@ -823,9 +823,10 @@
                   }
                   
                   // Generar filas de la tabla con estilos aplicados directamente
-                  data.facturas.forEach(factura => {
+                  data.facturas.forEach(async (factura) => {
                     const tr = document.createElement('tr');
                     tr.id = `factura-${factura.tipo}-${factura.puntoVenta}-${factura.numero}`;
+                    tr.dataset.id = `${factura.tipo}-${factura.puntoVenta}-${factura.numero}`;
                     
                     // Aplicar estilos directamente al elemento
                     tr.style.backgroundColor = '#ffffff';
@@ -845,12 +846,28 @@
                       return td;
                     };
                     
+                    // Crear una celda para el cliente con código y descripción
+                    const clienteCell = createStyledCell('');
+                    
+                    // Si tenemos tanto código como descripción, mostrar ambos
+                    if (factura.cliente && factura.clienteDescripcion) {
+                      clienteCell.innerHTML = `<span title="${factura.clienteDescripcion}">${factura.cliente} - ${factura.clienteDescripcion}</span>`;
+                    } 
+                    // Si solo tenemos código, mostrar solo eso
+                    else if (factura.cliente) {
+                      clienteCell.textContent = factura.cliente;
+                    } 
+                    // Si no hay datos
+                    else {
+                      clienteCell.textContent = '-';
+                    }
+                    
                     // Agregar celdas
                     tr.appendChild(createStyledCell(factura.tipo));
                     tr.appendChild(createStyledCell(factura.puntoVenta));
                     tr.appendChild(createStyledCell(factura.numero));
                     tr.appendChild(createStyledCell(formatDate(factura.fecha)));
-                    tr.appendChild(createStyledCell(factura.cliente || '-'));
+                    tr.appendChild(clienteCell); // Usar la celda de cliente modificada
                     tr.appendChild(createStyledCell(formatCurrency(factura.importeNeto)));
                     tr.appendChild(createStyledCell(formatCurrency(factura.importeIva)));
                     tr.appendChild(createStyledCell(formatCurrency(factura.total)));
@@ -935,6 +952,26 @@
           solicitarTodosBtn.addEventListener('click', solicitarTodosCAE);
         }
       });
+
+      // Agregar función para obtener información del cliente
+      async function obtenerInfoCliente(codigoCliente) {
+        try {
+          const response = await fetch(`${API_URL}/clientes/${codigoCliente}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            return data.cliente;
+          }
+          return null;
+        } catch (error) {
+          console.error('Error al obtener información del cliente:', error);
+          return null;
+        }
+      }
     </script>
   </body>
 </html> 
