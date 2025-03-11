@@ -84,22 +84,96 @@
       }
       .facturas-container {
         margin-top: 2rem;
+        padding: 1rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
       .facturas-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
         margin-top: 1rem;
-      }
-      .facturas-table th, .facturas-table td {
-        padding: 0.5rem;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        overflow: hidden;
       }
       .facturas-table th {
-        background-color: #f0f0f0;
+        background-color: #edf2f7;
+        color: #2d3748;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border-bottom: 2px solid #cbd5e0;
+      }
+      .facturas-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        color: #4a5568;
+      }
+      .facturas-table tr:last-child td {
+        border-bottom: none;
+      }
+      .facturas-table tr:nth-child(even) {
+        background-color: #f7fafc;
       }
       .facturas-table tr:hover {
-        background-color: #f5f5f5;
+        background-color: #ebf4ff;
+      }
+      .solicitar-cae-btn {
+        background-color: #3182ce;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+        font-weight: 500;
+        display: inline-block;
+        text-align: center;
+        min-width: 120px;
+      }
+      .solicitar-cae-btn:hover {
+        background-color: #2c5282;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        transform: translateY(-1px);
+      }
+      .solicitar-cae-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+      .btn-error {
+        background-color: #e53e3e;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+        font-weight: 500;
+        display: inline-block;
+        text-align: center;
+        min-width: 120px;
+      }
+      .btn-error:hover {
+        background-color: #c53030;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        transform: translateY(-1px);
+      }
+      #facturaCount {
+        font-weight: 500;
+        margin-bottom: 1rem;
+        color: #4a5568;
+      }
+      #facturasContainer.hidden {
+        display: none;
       }
       .action-btn {
         margin-right: 0.5rem;
@@ -143,6 +217,175 @@
       }
       .status-success {
         background-color: #28a745;
+      }
+      
+      /* Estilos más específicos para las celdas de la tabla */
+      #facturasTable td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        color: #4a5568;
+        font-size: 0.9rem;
+      }
+      
+      #facturasTable tr:last-child td {
+        border-bottom: none;
+      }
+      
+      #facturasTable tbody tr:nth-child(even) {
+        background-color: #f7fafc;
+      }
+      
+      #facturasTable tbody tr:hover {
+        background-color: #ebf4ff;
+      }
+      
+      /* Clases explícitas para usar en las filas generadas dinámicamente */
+      .tabla-fila {
+        transition: background-color 0.2s;
+      }
+      
+      .tabla-celda {
+        padding: 0.75rem 1rem !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        color: #4a5568 !important;
+      }
+      
+      /* Estilos para los botones dentro de la tabla */
+      .tabla-celda .solicitar-cae-btn {
+        background-color: #3b82f6;
+        color: white;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        border: none;
+        transition: background-color 0.2s;
+      }
+      
+      .tabla-celda .solicitar-cae-btn:hover {
+        background-color: #2563eb;
+      }
+      
+      /* Mejorar el aspecto de la tabla */
+      #facturasTable {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+      }
+      
+      #facturasTable th {
+        background-color: #4299e1;
+        color: white;
+        font-weight: 600;
+        padding: 0.75rem 1rem;
+      }
+      
+      #facturasTable tr:hover {
+        background-color: #ebf8ff;
+      }
+      
+      /* ===== ESTILOS MUY ESPECÍFICOS PARA LA TABLA ===== */
+      /* Aseguramos que estos estilos tengan prioridad */
+      
+      /* Estilo para la tabla completa */
+      #facturasTable {
+        width: 100% !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+        margin-top: 1rem !important;
+      }
+      
+      /* Cabeceras de la tabla */
+      #facturasTable th {
+        background-color: #4299e1 !important;
+        color: white !important;
+        font-weight: 600 !important;
+        padding: 0.75rem 1rem !important;
+        text-align: left !important;
+        border-bottom: 2px solid #2b6cb0 !important;
+      }
+      
+      /* Todas las celdas de la tabla */
+      #facturasTable td {
+        padding: 0.75rem 1rem !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        color: #4a5568 !important;
+        font-size: 0.9rem !important;
+        vertical-align: middle !important;
+      }
+      
+      /* Filas alternadas */
+      #facturasTable tr:nth-child(even) {
+        background-color: #f7fafc !important;
+      }
+      
+      /* Efecto hover en las filas */
+      #facturasTable tr:hover {
+        background-color: #ebf8ff !important;
+      }
+      
+      /* ===== ESTILOS PARA BOTONES ===== */
+      /* Botón principal (Solicitar CAE) */
+      .solicitar-cae-btn, 
+      button.solicitar-cae-btn,
+      #facturasTable .solicitar-cae-btn,
+      #facturasTable button.solicitar-cae-btn {
+        display: inline-block !important;
+        background-color: #3182ce !important;
+        color: white !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 6px !important;
+        font-size: 0.9rem !important;
+        cursor: pointer !important;
+        border: none !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.2s ease !important;
+        font-weight: 500 !important;
+        text-align: center !important;
+        min-width: 120px !important;
+        text-decoration: none !important;
+      }
+      
+      .solicitar-cae-btn:hover,
+      button.solicitar-cae-btn:hover,
+      #facturasTable .solicitar-cae-btn:hover,
+      #facturasTable button.solicitar-cae-btn:hover {
+        background-color: #2c5282 !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-1px) !important;
+      }
+      
+      /* Botón de error */
+      .btn-error,
+      button.btn-error,
+      #facturasTable .btn-error,
+      #facturasTable button.btn-error {
+        display: inline-block !important;
+        background-color: #e53e3e !important;
+        color: white !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 6px !important;
+        font-size: 0.9rem !important;
+        cursor: pointer !important;
+        border: none !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.2s ease !important;
+        font-weight: 500 !important;
+        text-align: center !important;
+        min-width: 120px !important;
+        text-decoration: none !important;
+      }
+      
+      .btn-error:hover,
+      button.btn-error:hover,
+      #facturasTable .btn-error:hover,
+      #facturasTable button.btn-error:hover {
+        background-color: #c53030 !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-1px) !important;
       }
     </style>
   </head>
@@ -278,7 +521,7 @@
           return date.toLocaleDateString('es-AR');
         };
         
-        // Función para solicitar CAE y actualizar la factura
+        // Modificar la función solicitarCAE para aplicar estilos directos
         const solicitarCAE = async (tipo, puntoVenta, numero) => {
           try {
             if (errorDiv) errorDiv.classList.add('hidden');
@@ -289,16 +532,51 @@
             const accionCell = filaFactura ? filaFactura.querySelector('td:last-child') : null;
             
             if (accionCell) {
-              // Mostrar indicador de carga
-              accionCell.innerHTML = `
-                <div class="flex items-center">
-                  <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Solicitando...
-                </div>
-              `;
+              // Crear elemento de carga con estilos directos
+              const loadingSpan = document.createElement('span');
+              loadingSpan.textContent = 'Solicitando...';
+              
+              // Crear un icono de carga giratorio
+              const spinner = document.createElement('div');
+              spinner.style.display = 'inline-block';
+              spinner.style.width = '16px';
+              spinner.style.height = '16px';
+              spinner.style.border = '2px solid #e2e8f0';
+              spinner.style.borderTopColor = '#3182ce';
+              spinner.style.borderRadius = '50%';
+              spinner.style.marginRight = '8px';
+              spinner.style.animation = 'spin 1s linear infinite';
+              
+              // Crear un estilo para la animación
+              if (!document.getElementById('spinnerStyle')) {
+                const styleElement = document.createElement('style');
+                styleElement.id = 'spinnerStyle';
+                styleElement.textContent = `
+                  @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                  }
+                `;
+                document.head.appendChild(styleElement);
+              }
+              
+              // Contenedor para el spinner y el texto
+              const loadingContainer = document.createElement('div');
+              loadingContainer.style.display = 'flex';
+              loadingContainer.style.alignItems = 'center';
+              loadingContainer.style.justifyContent = 'center';
+              loadingContainer.style.padding = '0.5rem 1rem';
+              loadingContainer.style.backgroundColor = '#e6f7ff';
+              loadingContainer.style.color = '#0056b3';
+              loadingContainer.style.borderRadius = '6px';
+              loadingContainer.style.fontWeight = '500';
+              
+              loadingContainer.appendChild(spinner);
+              loadingContainer.appendChild(loadingSpan);
+              
+              // Limpiar y agregar el contenedor de carga
+              accionCell.innerHTML = '';
+              accionCell.appendChild(loadingContainer);
             }
             
             const response = await fetch(`${API_URL}/astrial/grabar-cae`, {
@@ -318,15 +596,24 @@
             const data = await response.json();
             
             if (response.ok && data.success) {
-              // Actualizar la celda para mostrar el CAE
+              // Actualizar la celda para mostrar el CAE con estilos directos
               if (accionCell) {
-                accionCell.innerHTML = `
-                  <div class="px-2 py-1 bg-green-100 text-green-800 rounded">
-                    CAE: ${data.cae}
-                  </div>
-                `;
-                // Agregar un fondo verde claro a toda la fila
-                filaFactura.classList.add('bg-green-50');
+                // Crear div de éxito con estilos
+                const successDiv = document.createElement('div');
+                successDiv.textContent = `CAE: ${data.cae}`;
+                successDiv.style.padding = '0.5rem 1rem';
+                successDiv.style.backgroundColor = '#f0fff4';
+                successDiv.style.color = '#22543d';
+                successDiv.style.borderRadius = '6px';
+                successDiv.style.fontWeight = '500';
+                successDiv.style.border = '1px solid #c6f6d5';
+                
+                // Limpiar y agregar el mensaje de éxito
+                accionCell.innerHTML = '';
+                accionCell.appendChild(successDiv);
+                
+                // Cambiar el color de fondo de la fila
+                filaFactura.style.backgroundColor = '#f0fff4';
               }
               
               // Mostrar mensaje de éxito
@@ -337,23 +624,37 @@
               
               return { success: true, cae: data.cae, error: null };
             } else {
-              // Actualizar celda para mostrar el error
+              // Actualizar celda para mostrar el error con estilos directos
               if (accionCell) {
                 const errorMsg = data.error || 'Error al solicitar CAE';
-                accionCell.innerHTML = `
-                  <button class="px-2 py-1 bg-red-100 text-red-800 rounded error-details-btn" 
-                          data-error="${errorMsg.replace(/"/g, '&quot;')}">
-                    Error
-                  </button>
-                `;
-                // Agregar un fondo rojo claro a toda la fila
-                filaFactura.classList.add('bg-red-50');
                 
-                // Agregar evento al botón de error
-                accionCell.querySelector('.error-details-btn')?.addEventListener('click', (e) => {
-                  const btn = e.target as HTMLButtonElement;
-                  alert(btn.dataset.error || 'Error desconocido');
+                // Crear botón de error con estilos
+                const errorButton = document.createElement('button');
+                errorButton.textContent = 'Error';
+                errorButton.style.backgroundColor = '#e53e3e';
+                errorButton.style.color = 'white';
+                errorButton.style.padding = '0.5rem 1rem';
+                errorButton.style.borderRadius = '6px';
+                errorButton.style.fontSize = '0.9rem';
+                errorButton.style.cursor = 'pointer';
+                errorButton.style.border = 'none';
+                errorButton.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                errorButton.style.transition = 'all 0.2s ease';
+                errorButton.style.fontWeight = '500';
+                errorButton.style.minWidth = '120px';
+                errorButton.style.textAlign = 'center';
+                
+                // Agregar evento para mostrar el detalle del error
+                errorButton.addEventListener('click', () => {
+                  alert(errorMsg);
                 });
+                
+                // Limpiar y agregar el botón de error
+                accionCell.innerHTML = '';
+                accionCell.appendChild(errorButton);
+                
+                // Cambiar el color de fondo de la fila
+                filaFactura.style.backgroundColor = '#fff5f5';
               }
               
               if (errorDiv) {
@@ -366,25 +667,38 @@
           } catch (error) {
             console.error('Error:', error);
             
-            // Actualizar celda para mostrar el error
+            // Actualizar celda para mostrar el error con estilos directos
             const filaFactura = document.getElementById(`factura-${tipo}-${puntoVenta}-${numero}`);
             const accionCell = filaFactura ? filaFactura.querySelector('td:last-child') : null;
             
             if (accionCell) {
-              accionCell.innerHTML = `
-                <button class="px-2 py-1 bg-red-100 text-red-800 rounded error-details-btn" 
-                        data-error="Error de conexión: No se pudo contactar al servidor">
-                  Error
-                </button>
-              `;
-              // Agregar un fondo rojo claro a toda la fila
-              filaFactura.classList.add('bg-red-50');
+              // Crear botón de error con estilos
+              const errorButton = document.createElement('button');
+              errorButton.textContent = 'Error';
+              errorButton.style.backgroundColor = '#e53e3e';
+              errorButton.style.color = 'white';
+              errorButton.style.padding = '0.5rem 1rem';
+              errorButton.style.borderRadius = '6px';
+              errorButton.style.fontSize = '0.9rem';
+              errorButton.style.cursor = 'pointer';
+              errorButton.style.border = 'none';
+              errorButton.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              errorButton.style.transition = 'all 0.2s ease';
+              errorButton.style.fontWeight = '500';
+              errorButton.style.minWidth = '120px';
+              errorButton.style.textAlign = 'center';
               
-              // Agregar evento al botón de error
-              accionCell.querySelector('.error-details-btn')?.addEventListener('click', (e) => {
-                const btn = e.target as HTMLButtonElement;
-                alert(btn.dataset.error || 'Error desconocido');
+              // Agregar evento para mostrar el detalle del error
+              errorButton.addEventListener('click', () => {
+                alert('Error de conexión: No se pudo contactar al servidor');
               });
+              
+              // Limpiar y agregar el botón de error
+              accionCell.innerHTML = '';
+              accionCell.appendChild(errorButton);
+              
+              // Cambiar el color de fondo de la fila
+              filaFactura.style.backgroundColor = '#fff5f5';
             }
             
             if (errorDiv) {
@@ -508,45 +822,87 @@
                     facturaCount.textContent = `Se encontraron ${data.facturas.length} facturas sin CAE`;
                   }
                   
-                  // Generar filas de la tabla
+                  // Generar filas de la tabla con estilos aplicados directamente
                   data.facturas.forEach(factura => {
                     const tr = document.createElement('tr');
                     tr.id = `factura-${factura.tipo}-${factura.puntoVenta}-${factura.numero}`;
                     
-                    tr.innerHTML = `
-                      <td>${factura.tipo}</td>
-                      <td>${factura.puntoVenta}</td>
-                      <td>${factura.numero}</td>
-                      <td>${formatDate(factura.fecha)}</td>
-                      <td>${factura.cliente || '-'}</td>
-                      <td>${formatCurrency(factura.importeNeto)}</td>
-                      <td>${formatCurrency(factura.importeIva)}</td>
-                      <td>${formatCurrency(factura.total)}</td>
-                      <td>
-                        <button class="action-btn solicitar-cae-btn" data-tipo="${factura.tipo}" data-punto-venta="${factura.puntoVenta}" data-numero="${factura.numero}">
-                          Solicitar CAE
-                        </button>
-                      </td>
-                    `;
+                    // Aplicar estilos directamente al elemento
+                    tr.style.backgroundColor = '#ffffff';
+                    tr.style.transition = 'background-color 0.2s';
+                    
+                    // Crear cada celda con su estilo aplicado directamente
+                    const createStyledCell = (content) => {
+                      const td = document.createElement('td');
+                      td.innerHTML = content;
+                      
+                      // Aplicar estilos directamente
+                      td.style.padding = '0.75rem 1rem';
+                      td.style.borderBottom = '1px solid #e2e8f0';
+                      td.style.color = '#4a5568';
+                      td.style.verticalAlign = 'middle';
+                      
+                      return td;
+                    };
+                    
+                    // Agregar celdas
+                    tr.appendChild(createStyledCell(factura.tipo));
+                    tr.appendChild(createStyledCell(factura.puntoVenta));
+                    tr.appendChild(createStyledCell(factura.numero));
+                    tr.appendChild(createStyledCell(formatDate(factura.fecha)));
+                    tr.appendChild(createStyledCell(factura.cliente || '-'));
+                    tr.appendChild(createStyledCell(formatCurrency(factura.importeNeto)));
+                    tr.appendChild(createStyledCell(formatCurrency(factura.importeIva)));
+                    tr.appendChild(createStyledCell(formatCurrency(factura.total)));
+                    
+                    // Crear celda de acción
+                    const actionCell = document.createElement('td');
+                    actionCell.style.padding = '0.75rem 1rem';
+                    actionCell.style.borderBottom = '1px solid #e2e8f0';
+                    
+                    // Crear botón de acción con estilos aplicados directamente
+                    const actionBtn = document.createElement('button');
+                    actionBtn.textContent = 'Solicitar CAE';
+                    actionBtn.dataset.tipo = factura.tipo;
+                    actionBtn.dataset.puntoVenta = factura.puntoVenta;
+                    actionBtn.dataset.numero = factura.numero;
+                    
+                    // Aplicar estilos al botón
+                    actionBtn.style.backgroundColor = '#3182ce';
+                    actionBtn.style.color = 'white';
+                    actionBtn.style.padding = '0.5rem 1rem';
+                    actionBtn.style.borderRadius = '6px';
+                    actionBtn.style.fontSize = '0.9rem';
+                    actionBtn.style.cursor = 'pointer';
+                    actionBtn.style.border = 'none';
+                    actionBtn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                    actionBtn.style.transition = 'all 0.2s ease';
+                    actionBtn.style.fontWeight = '500';
+                    actionBtn.style.minWidth = '120px';
+                    actionBtn.style.textAlign = 'center';
+                    
+                    // Agregar evento para el botón
+                    actionBtn.addEventListener('click', () => {
+                      solicitarCAE(factura.tipo, factura.puntoVenta, factura.numero);
+                    });
+                    
+                    // Agregar el botón a la celda y la celda a la fila
+                    actionCell.appendChild(actionBtn);
+                    tr.appendChild(actionCell);
+                    
+                    // Agregar evento hover a la fila
+                    tr.addEventListener('mouseover', () => {
+                      tr.style.backgroundColor = '#ebf8ff';
+                    });
+                    
+                    tr.addEventListener('mouseout', () => {
+                      tr.style.backgroundColor = '#ffffff';
+                    });
                     
                     facturasBody.appendChild(tr);
                   });
                   
-                  // Agregar eventos a los botones
-                  document.querySelectorAll('.solicitar-cae-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                      // Asegurar que el evento tenga un target y convertirlo al tipo correcto
-                      if (e.target) {
-                        const target = e.target as HTMLButtonElement;
-                        // Extraer datos de los atributos data-*
-                        const tipo = target.dataset.tipo || '';
-                        const puntoVenta = target.dataset.puntoVenta || '';
-                        const numero = target.dataset.numero || '';
-                        
-                        solicitarCAE(tipo, puntoVenta, numero);
-                      }
-                    });
-                  });
+                  // No necesitamos agregar eventos a los botones ya que lo hicimos durante la creación
                   
                   // Mostrar tabla
                   if (facturasContainer) facturasContainer.classList.remove('hidden');
