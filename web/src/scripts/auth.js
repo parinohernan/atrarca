@@ -83,6 +83,37 @@ const fetchWithAuth = async (url, options = {}) => {
   return response;
 };
 
+// Script para manejar autenticación
+export function setupAuth() {
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  // Actualizar nombre de usuario
+  const userNameEl = document.getElementById("userName");
+  if (userNameEl && user.name) {
+    userNameEl.textContent = user.name;
+  }
+
+  // Verificar autenticación
+  if (!token && !window.location.pathname.includes("/login")) {
+    window.location.href = "/login";
+    return false;
+  }
+
+  return { token, user };
+}
+
+export function setupLogout() {
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    });
+  }
+}
+
 export {
   isAuthenticated,
   getCurrentUser,
