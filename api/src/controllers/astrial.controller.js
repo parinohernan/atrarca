@@ -163,7 +163,25 @@ exports.getFacturasSinCAE = async (req, res) => {
 exports.grabarCAE = async (req, res) => {
   try {
     // Verificar que el usuario tenga una empresa asociada
-    const empresa = req.user.empresa;
+    const todo = {
+      username: "empresa1",
+      password: "empresa1",
+      name: "JHP DEVELOPMENT",
+      role: "user",
+      empresa: {
+        cuit: "20278280641",
+        razonSocial: "JHP DEVELOPMENT SRL",
+        certificado: "jhp.crt",
+        key: "jhp.key",
+        dbType: "mysql",
+        dbHost: "localhost",
+        dbPort: 3306,
+        dbUser: "root",
+        dbPassword: "45tr14l",
+        dbName: "db_sis_fac",
+      },
+    };
+    const empresa = todo.empresa;
     if (!empresa || !empresa.dbName) {
       return res.status(403).json({
         error: "El usuario no tiene configuración de base de datos",
