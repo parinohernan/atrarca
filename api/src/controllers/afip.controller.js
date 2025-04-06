@@ -3,13 +3,41 @@ const afipService = require("../services/afip.service");
 exports.getUltimoComprobante = async (req, res) => {
   console.log("getUltimoComprobante", req.query);
   try {
-    // Verificar explícitamente si existe req.user
-    if (!req.user) {
-      return res.status(401).json({
-        error: "No autenticado o sesión expirada",
-        detalle: "Debe iniciar sesión nuevamente",
-      });
+    // Debuggear valores de variables de entorno
+    console.log("Valores de configuración:", {
+      cuit: process.env.EMPRESA_CUIT,
+      certificado: process.env.EMPRESA_CERTIFICADO,
+      key: process.env.EMPRESA_KEY,
+    });
+
+    const empresahc = {
+      cuit: process.env.EMPRESA_CUIT,
+      razonSocial: process.env.EMPRESA_RAZON_SOCIAL,
+      certificado: process.env.EMPRESA_CERTIFICADO,
+      key: process.env.EMPRESA_KEY,
+      dbType: process.env.EMPRESA_DB_TYPE,
+      dbHost: process.env.EMPRESA_DB_HOST,
+      dbPort: parseInt(process.env.EMPRESA_DB_PORT),
+      dbUser: process.env.EMPRESA_DB_USER,
+      dbPassword: process.env.EMPRESA_DB_PASSWORD,
+      dbName: process.env.EMPRESA_DB_NAME,
+    };
+
+    // Verificar que la empresa tenga todos los datos necesarios
+    if (!empresahc.cuit || !empresahc.certificado || !empresahc.key) {
+      throw new Error(
+        "Faltan datos de configuración de la empresa (CUIT, certificado o key)"
+      );
     }
+
+    req.user = { empresa: empresahc };
+    // Verificar explícitamente si existe req.user
+    // if (!req.user) {
+    //   return res.status(401).json({
+    //     error: "No autenticado o sesión expirada",
+    //     detalle: "Debe iniciar sesión nuevamente",
+    //   });
+    // }
 
     const { puntoVenta, tipoComprobante } = req.query;
 
@@ -190,6 +218,89 @@ exports.getCotizacion = async (req, res) => {
     console.error("Error al consultar cotización:", error);
     res.status(500).json({
       error: "Error al consultar cotización",
+      detalle: error.message,
+    });
+  }
+};
+
+exports.testCertificados = async (req, res) => {
+  try {
+    console.log("Iniciando test de certificados por solicitud del usuario");
+
+    // Usar los certificados configurados en variables de entorno
+    const empresahc = {
+      cuit: process.env.EMPRESA_CUIT,
+      razonSocial: process.env.EMPRESA_RAZON_SOCIAL,
+      certificado: process.env.EMPRESA_CERTIFICADO,
+      key: process.env.EMPRESA_KEY,
+    };
+
+    // Verificaciones básicas
+    const fs = require("fs");
+    const path = require("path");
+
+    const certPath = path.resolve(empresahc.certificado);
+    const keyPath = path.resolve(empresahc.key);
+
+    const diagnostico = {
+      configuracion: {
+        cuit: empresahc.cuit,
+        certificadoPath: empresahc.certificado,
+        keyPath: empresahc.key,
+      },
+      archivos: {
+        certificadoExiste: fs.existsSync(certPath),
+        certificadoRutaAbsoluta: certPath,
+        keyExiste: fs.existsSync(keyPath),
+        keyRutaAbsoluta: keyPath,
+      },
+      wsaaUrl: "https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl",
+    };
+
+    // Solo intentar la autenticación si los certificados existen
+    if (
+      diagnostico.archivos.certificadoExiste &&
+      diagnostico.archivos.keyExiste
+    ) {
+      try {
+        // Importar servicios solo cuando sea necesario
+        const soap = require("soap");
+        const url = diagnostico.wsaaUrl;
+
+        // Verificar si el servicio está disponible
+        diagnostico.servicio = { intentando: true };
+
+        try {
+          const client = await soap.createClientAsync(url, { timeout: 5000 });
+          diagnostico.servicio = {
+            disponible: true,
+            metodos: Object.keys(client).filter(
+              (m) => typeof client[m] === "function"
+            ),
+          };
+        } catch (error) {
+          diagnostico.servicio = {
+            disponible: false,
+            error: error.message,
+          };
+        }
+      } catch (error) {
+        diagnostico.autenticacion = {
+          success: false,
+          error: error.message,
+        };
+      }
+    }
+
+    res.json({
+      success: true,
+      diagnostico,
+    });
+  } catch (error) {
+    console.error("Error al probar certificados:", error);
+    res.status(500).json({
+      success: false,
+      error: "Error al probar certificados",
       detalle: error.message,
     });
   }

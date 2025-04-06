@@ -27,8 +27,8 @@ class WSAAService {
     }
 
     this.cuit = empresa.cuit;
-    this.certPath = path.resolve(__dirname, "../certs/", empresa.certificado);
-    this.keyPath = path.resolve(__dirname, "../certs/", empresa.key);
+    this.certPath = path.resolve(__dirname, "../../", empresa.certificado);
+    this.keyPath = path.resolve(__dirname, "../../", empresa.key);
 
     console.log(`Configuración de empresa establecida: CUIT=${this.cuit}`);
   }
@@ -245,7 +245,11 @@ class WSAAService {
       const derPath = path.resolve(this.tokenPath, "TRA.der");
 
       // Método directo: Generar directamente el archivo DER
-      console.log("Firmando TRA con certificado directamente a DER...");
+      console.log(
+        "Firmando TRA con certificado directamente a DER...",
+        this.certPath,
+        this.keyPath
+      );
       const directCommand = `openssl cms -sign -in "${traPath}" -out "${derPath}" -signer "${this.certPath}" -inkey "${this.keyPath}" -nodetach -outform DER`;
       execSync(directCommand);
 

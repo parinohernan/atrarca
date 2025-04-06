@@ -1,6 +1,7 @@
 const dbService = require("../services/db.service");
 const afipService = require("../services/afip.service");
-
+const dotenv = require("dotenv");
+dotenv.config();
 // Mapeo de tipos de comprobante Astrial a AFIP
 const tipoComprobanteMap = {
   FCA: "1", // Factura A
@@ -8,7 +9,18 @@ const tipoComprobanteMap = {
   NCA: "3", // Nota de Crédito A
   NCB: "8", // Nota de Crédito B
 };
-
+const empresahc = {
+  cuit: process.env.EMPRESA_CUIT,
+  razonSocial: process.env.EMPRESA_RAZON_SOCIAL,
+  certificado: process.env.EMPRESA_CERTIFICADO,
+  key: process.env.EMPRESA_KEY,
+  dbType: process.env.EMPRESA_DB_TYPE,
+  dbHost: process.env.EMPRESA_DB_HOST,
+  dbPort: parseInt(process.env.EMPRESA_DB_PORT),
+  dbUser: process.env.EMPRESA_DB_USER,
+  dbPassword: process.env.EMPRESA_DB_PASSWORD,
+  dbName: process.env.EMPRESA_DB_NAME,
+};
 // Obtener facturas y notas de crédito sin CAE
 exports.getFacturasSinCAE = async (req, res) => {
   console.log("getFacturasSinCAE");
@@ -18,7 +30,7 @@ exports.getFacturasSinCAE = async (req, res) => {
     const { puntoVenta, tipo } = req.query;
 
     // Verificar que el usuario tenga una empresa asociada
-    const empresa = req.user.empresa;
+    const empresa = empresahc;
     if (!empresa || !empresa.dbName) {
       return res.status(403).json({
         error: "El usuario no tiene configuración de base de datos",

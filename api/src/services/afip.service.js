@@ -1,5 +1,9 @@
 const soap = require("soap");
 const wsaaService = require("./wsaa.service");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const xml2js = require("xml2js");
 
 // URLs de servicios AFIP
 const URLS = {
@@ -53,13 +57,10 @@ class AfipService {
       if (empresa) {
         this.setEmpresa(empresa);
       }
-
       // Verificar que el CUIT está configurado
       if (!this.cuit) {
         throw new Error("No se ha configurado el CUIT de la empresa");
       }
-
-      console.log(`Usando CUIT: ${this.cuit} para autenticación`);
 
       // Pasar la empresa al servicio WSAA
       const { token, sign } = await wsaaService.authenticate("wsfe", empresa);
@@ -76,10 +77,6 @@ class AfipService {
 
   async consultarUltimoComprobante(puntoVenta, tipoComprobante, empresa) {
     try {
-      console.log(
-        `Consultando último comprobante: PV=${puntoVenta}, TC=${tipoComprobante}`
-      );
-
       // Pasar la empresa a getAuthData
       const authData = await this.getAuthData(empresa);
 
@@ -121,6 +118,11 @@ class AfipService {
         fecha: new Date().toISOString().slice(0, 10),
         ultimoComprobante: resultado.FECompUltimoAutorizadoResult.CbteNro,
       };
+      // return {
+      //   success: true,
+      //   fecha: new Date().toISOString().slice(0, 10),
+      //   ultimoComprobante: "1234567890",
+      // };
     } catch (error) {
       console.error("Error al consultar último comprobante:", error);
       throw new Error(
@@ -693,6 +695,158 @@ class AfipService {
       return "Error al procesar la respuesta de AFIP";
     }
   }
+
+  /**
+   * Genera un ticket de acceso para el servicio especificado
+   */
+  async generarTicketAcceso(service, empresa) {
+    try {
+      console.log(`Generando ticket de acceso para servicio ${service}`);
+      const fs = require("fs");
+      const path = require("path");
+      const soap = require("soap");
+      const crypto = require("crypto");
+      const xml2js = require("xml2js");
+
+      // Verificar existencia de certificados
+      const { certPath, keyPath } = this.getCertificatePaths(empresa);
+
+      if (!fs.existsSync(certPath)) {
+        throw new Error(`Certificado no encontrado en ${certPath}`);
+      }
+
+      if (!fs.existsSync(keyPath)) {
+        throw new Error(`Clave privada no encontrada en ${keyPath}`);
+      }
+
+      // Generar TRA
+      const currentTime = new Date();
+      const expirationTime = new Date(currentTime.getTime() + 600000); // 10 minutos
+
+      const traXml = `<?xml version="1.0" encoding="UTF-8" ?>
+      <loginTicketRequest version="1.0">
+        <header>
+          <uniqueId>${Math.floor(Date.now() / 1000)}</uniqueId>
+          <generationTime>${currentTime.toISOString()}</generationTime>
+          <expirationTime>${expirationTime.toISOString()}</expirationTime>
+        </header>
+        <service>${service}</service>
+      </loginTicketRequest>`;
+
+      // Firmar TRA
+      const cert = fs.readFileSync(certPath, "utf8");
+      const key = fs.readFileSync(keyPath, "utf8");
+
+      const p7 = crypto.createSign("RSA-SHA1");
+      p7.write(traXml);
+      p7.end();
+
+      const signature = p7.sign({ key, cert }, "base64");
+
+      // Llamar a WSAA
+      const wsdlUrl = "https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl";
+      const client = await soap.createClientAsync(wsdlUrl);
+
+      const result = await client.loginCmsAsync({
+        in0: signature,
+      });
+
+      // Parsear respuesta
+      const response = result[0].loginCmsReturn;
+      const parser = new xml2js.Parser({ explicitArray: false });
+      const parsedResponse = await parser.parseStringPromise(response);
+
+      return {
+        token: parsedResponse.loginTicketResponse.credentials.token,
+        sign: parsedResponse.loginTicketResponse.credentials.sign,
+        expirationTime:
+          parsedResponse.loginTicketResponse.header.expirationTime,
+      };
+    } catch (error) {
+      console.error(`Error al generar ticket de acceso: ${error.message}`);
+      throw new Error(`Error al generar ticket de acceso: ${error.message}`);
+    }
+  }
+
+  getCertificatePaths(empresa) {
+    const path = require("path");
+
+    // Obtener la ruta base de la aplicación
+    const basePath = path.resolve(__dirname, "../../");
+
+    // Corregir las rutas para evitar duplicaciones
+    let certPath = empresa.certificado;
+    let keyPath = empresa.key;
+
+    // Si las rutas son relativas, resolverlas correctamente
+    if (!path.isAbsolute(certPath)) {
+      certPath = path.resolve(basePath, certPath);
+    }
+
+    if (!path.isAbsolute(keyPath)) {
+      keyPath = path.resolve(basePath, keyPath);
+    }
+
+    console.log("Rutas de certificados resueltas:", {
+      certPath,
+      keyPath,
+      existeCert: require("fs").existsSync(certPath),
+      existeKey: require("fs").existsSync(keyPath),
+    });
+
+    return { certPath, keyPath };
+  }
 }
+
+async function testCertificado() {
+  try {
+    const cuit = process.env.EMPRESA_CUIT;
+    const certPath = process.env.EMPRESA_CERTIFICADO;
+    const keyPath = process.env.EMPRESA_KEY;
+
+    console.log("Probando certificados con CUIT:", cuit);
+    console.log(
+      "Certificado:",
+      fs.existsSync(certPath) ? "Existe" : "No existe"
+    );
+    console.log(
+      "Clave privada:",
+      fs.existsSync(keyPath) ? "Existe" : "No existe"
+    );
+
+    // Generar TRA (XML de solicitud de ticket)
+    const tra = generarTRA("wsfe");
+
+    // Firmar TRA con certificados
+    const cms = firmarTRA(tra, certPath, keyPath);
+
+    // Llamar a WSAA para obtener TA
+    const wsaaWsdl =
+      "https://servicios1.afip.gov.ar/wso/services/LoginCms?wsdl";
+    const client = await soap.createClientAsync(wsaaWsdl);
+
+    const result = await client.loginCmsAsync({
+      in0: cms,
+    });
+
+    console.log("Autenticación exitosa! Ticket obtenido.");
+    return "Certificados válidos";
+  } catch (error) {
+    console.error("Error en prueba de certificados:", error);
+    return `Error: ${error.message}`;
+  }
+}
+
+function generarTRA(service) {
+  // Actual TRA generation code...
+  // (Simplificado para este ejemplo)
+}
+
+function firmarTRA(tra, cert, key) {
+  // Actual signing code...
+  // (Simplificado para este ejemplo)
+}
+
+// testCertificado().then(console.log).catch(console.error);
 
 module.exports = new AfipService();

@@ -12,6 +12,7 @@ const express = require("express");
 const cors = require("cors");
 const routes = require("./routes");
 const dotenv = require("dotenv");
+const path = require("path");
 
 // Cargar variables de entorno
 dotenv.config();
