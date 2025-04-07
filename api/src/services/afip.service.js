@@ -19,7 +19,8 @@ class AfipService {
   constructor() {
     this.mode = process.env.AFIP_MODE || "testing";
     this.wsfeClient = null;
-    this.cuit = null; // Se establecerá por empresa
+    this.cuit = process.env.AFIP_CUIT; // Se establecerá por empresa
+    console.log("AAAAAAAFIP_CUIT", this.cuit);
   }
 
   // Método para establecer la empresa actual
