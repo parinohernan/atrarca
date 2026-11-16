@@ -200,7 +200,7 @@ exports.grabarCAE = async (req, res) => {
       });
     }
 
-    const { tipo, puntoVenta, numero, solicitarCAE } = req.body;
+    const { tipo, puntoVenta, numero, solicitarCAE, comprobanteAsociado } = req.body;
 
     // Validar que todos los campos requeridos estén presentes
     if (!tipo || !puntoVenta || !numero) {
@@ -226,7 +226,7 @@ exports.grabarCAE = async (req, res) => {
     }
 
     // Determinar si es factura o nota de crédito
-    const esNotaCredito = tipo === "NCA" || tipo === "NCB";
+    const esNotaCredito = tipo === "NCA" || tipo === "NCB" || tipo === "NCC";
     const tabla = esNotaCredito ? "notacreditocabeza" : "facturaCabeza";
     const clienteField = esNotaCredito ? "CodigoCliente" : "ClienteCodigo";
 
@@ -317,18 +317,18 @@ exports.grabarCAE = async (req, res) => {
 
       // Datos adicionales para notas de crédito
       let datosAdicionales = {};
-      if (
-        esNotaCredito &&
-        documento.factura_tipo &&
-        documento.factura_sucursal &&
-        documento.factura_numero
-      ) {
+      const tipoAsociado = comprobanteAsociado?.tipo || documento.factura_tipo;
+      const sucursalAsociada =
+        comprobanteAsociado?.puntoVenta || documento.factura_sucursal;
+      const numeroAsociado =
+        comprobanteAsociado?.numero || documento.factura_numero;
+      if (esNotaCredito && tipoAsociado && sucursalAsociada && numeroAsociado) {
         datosAdicionales = {
           comprobantesAsociados: [
             {
-              Tipo: mapearTipoComprobante(documento.factura_tipo),
-              PtoVta: parseInt(documento.factura_sucursal, 10),
-              Nro: parseInt(documento.factura_numero, 10),
+              Tipo: mapearTipoComprobante(tipoAsociado),
+              PtoVta: parseInt(sucursalAsociada, 10),
+              Nro: parseInt(numeroAsociado, 10),
             },
           ],
         };
@@ -447,8 +447,10 @@ function mapearTipoComprobante(tipoAstrial) {
   const mapa = {
     FCA: 1, // Factura A
     FCB: 6, // Factura B
+    FCC: 11, // Factura C
     NCA: 3, // Nota de Crédito A
     NCB: 8, // Nota de Crédito B
+    NCC: 13, // Nota de Crédito C
   };
 
   return mapa[tipoAstrial] || 1; // Default a Factura A si no se encuentra
